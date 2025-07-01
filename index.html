@@ -85,6 +85,39 @@
   </style>
 </head>
 <body>
+  <div id="setupPrompt" style="margin-top: 40px;">
+  <button id="setupBtn" style="padding:10px 18px; font-size:15px;">
+    🔧 Set up default headteacher account
+  </button>
+</div>
+
+<script>
+  const alreadySeeded = localStorage.getItem("defaultHeadteacherSeeded");
+
+  if (alreadySeeded) {
+    document.getElementById("setupPrompt").style.display = "none";
+  }
+
+  document.getElementById("setupBtn").addEventListener("click", () => {
+    const existing = JSON.parse(localStorage.getItem("userAccounts")) || [];
+    if (!existing.some(u => u.role === "headteacher")) {
+      existing.push({
+        name: "Nsuta Head",
+        phone: "0550001111",
+        pin: "2025",
+        role: "headteacher"
+      });
+      localStorage.setItem("userAccounts", JSON.stringify(existing));
+      alert("✅ Default headteacher created:\nPhone: 0550001111\nPIN: 2025");
+    } else {
+      alert("ℹ️ A headteacher account already exists.");
+    }
+
+    localStorage.setItem("defaultHeadteacherSeeded", "true");
+    document.getElementById("setupPrompt").style.display = "none";
+  });
+</script>
+  
   <h1>Nkawkaw Nsuta B Basic School</h1>
   <h3>"Knowledge is Power"</h3>
 
