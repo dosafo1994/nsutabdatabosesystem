@@ -1,11 +1,16 @@
-const userAccounts = JSON.parse(localStorage.getItem("userAccounts")) || [];
+<script>
+  const storedAccounts = JSON.parse(localStorage.getItem("userAccounts")) || [];
 
-if (!userAccounts.some(u => u.role === "headteacher")) {
-  userAccounts.push({
-    name: "Nsuta Head",
-    phone: "0277272737",
-    pin: "1234",
-    role: "headteacher"
-  });
-  localStorage.setItem("userAccounts", JSON.stringify(userAccounts));
-}
+  const headExists = storedAccounts.some(u => u.role === "headteacher");
+
+  if (!headExists) {
+    storedAccounts.push({
+      name: "Nsuta Head",
+      phone: "0277272737",
+      pin: "1234",
+      role: "headteacher"
+    });
+    localStorage.setItem("userAccounts", JSON.stringify(storedAccounts));
+    console.log("✅ Default headteacher account seeded.");
+  }
+</script>
