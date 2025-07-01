@@ -1,0 +1,195 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <title>Student Remarks | Nsuta Portal</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <script src="router.js"></script>
+  <link rel="stylesheet" href="style.css" />
+
+  <!-- Session restore -->
+  <script>
+    const activeUser = JSON.parse(localStorage.getItem("activeUser"));
+    if (
+      !sessionStorage.getItem("role") &&
+      activeUser?.role === "headteacher"
+    ) {
+      sessionStorage.setItem("username", activeUser.username);
+      sessionStorage.setItem("displayName", activeUser.displayName);
+      sessionStorage.setItem("role", activeUser.role);
+    }
+  </script>
+  <script src="guard.js"></script>
+
+  <style>
+    body {
+      font-family: Arial, sans-serif;
+      padding: 30px;
+      max-width: 800px;
+      margin: auto;
+      background: #f4f9ff;
+    }
+
+    h2 {
+      text-align: center;
+      margin-bottom: 20px;
+    }
+
+    select, input, textarea {
+      width: 100%;
+      padding: 10px;
+      font-size: 14px;
+      margin-top: 5px;
+      margin-bottom: 15px;
+    }
+
+    label {
+      font-weight: bold;
+    }
+
+    button {
+      background: #0077cc;
+      color: white;
+      padding: 12px;
+      font-size: 14px;
+      border: none;
+      border-radius: 5px;
+      cursor: pointer;
+      width: 100%;
+      margin-top: 10px;
+    }
+
+    button:hover {
+      background: #005fa3;
+    }
+
+    .remarks-table {
+      margin-top: 30px;
+      border-collapse: collapse;
+      width: 100%;
+    }
+
+    .remarks-table th, .remarks-table td {
+      border: 1px solid #ccc;
+      padding: 8px;
+      font-size: 13px;
+      text-align: left;
+    }
+
+    .remarks-table th {
+      background: #f0f0f0;
+    }
+
+    @media print {
+      select, input, textarea, button { display: none; }
+    }
+  </style>
+</head>
+<body>
+  <h2>📝 Student Remarks & Observations</h2>
+
+  <label>Select Student</label>
+  <select id="studentSelect"></select>
+
+  <label>Conduct</label>
+  <input type="text" id="conduct" placeholder="e.g. Respectful and diligent" />
+
+  <label>Talent / Interest</label>
+  <input type="text" id="talent" placeholder="e.g. Music, Sports, Drama" />
+
+  <label>Class Position</label>
+  <input type="text" id="position" placeholder="e.g. 5th" />
+
+  <label>Attendance</label>
+  <input type="text" id="attendance" placeholder="e.g. 62 out of 64" />
+
+  <label>Class Teacher's Remark</label>
+  <textarea id="teacherRemark" rows="3" placeholder="Short observation on student's overall performance"></textarea>
+
+  <label>Class Teacher Name</label>
+  <input type="text" id="teacherName" />
+
+  <label>Headteacher Name</label>
+  <input type="text" id="headName" value="${sessionStorage.getItem("displayName") || ""}" />
+
+  <button onclick="saveRemark()">💾 Save Remarks</button>
+
+  <table class="remarks-table">
+    <thead>
+      <tr>
+        <th>Student</th>
+        <th>Conduct</th>
+        <th>Talent</th>
+        <th>Position</th>
+        <th>Attendance</th>
+        <th>Remark</th>
+        <th>Teacher</th>
+        <th>Headteacher</th>
+      </tr>
+    </thead>
+    <tbody id="remarksBody"></tbody>
+  </table>
+
+  <script>
+    const students = JSON.parse(localStorage.getItem("studentDatabase")) || [];
+    const remarksData = JSON.parse(localStorage.getItem("termRemarks")) || {};
+    const select = document.getElementById("studentSelect");
+
+    students.forEach(s => {
+      const option = document.createElement("option");
+      option.value = s.studentId;
+      option.textContent = `${s.name} (${s.class})`;
+      select.appendChild(option);
+    });
+
+    function saveRemark() {
+      const id = select.value;
+      const conduct = document.getElementById("conduct").value.trim();
+      const talent = document.getElementById("talent").value.trim();
+      const position = document.getElementById("position").value.trim();
+      const attendance = document.getElementById("attendance").value.trim();
+      const teacherRemark = document.getElementById("teacherRemark").value.trim();
+      const teacher = document.getElementById("teacherName").value.trim();
+      const headteacher = document.getElementById("headName").value.trim();
+
+      remarksData[id] = {
+        conduct,
+        talent,
+        position,
+        attendance,
+        teacherRemark,
+        teacher,
+        headteacher
+      };
+
+      localStorage.setItem("termRemarks", JSON.stringify(remarksData));
+      renderTable();
+    }
+
+    function renderTable() {
+      const body = document.getElementById("remarksBody");
+      body.innerHTML = "";
+
+      Object.keys(remarksData).forEach(id => {
+        const student = students.find(s => s.studentId === id);
+        const r = remarksData[id];
+
+        const row = document.createElement("tr");
+        row.innerHTML = `
+          <td>${student ? student.name : id}</td>
+          <td>${r.conduct}</td>
+          <td>${r.talent}</td>
+          <td>${r.position}</td>
+          <td>${r.attendance}</td>
+          <td>${r.teacherRemark}</td>
+          <td>${r.teacher}</td>
+          <td>${r.headteacher}</td>
+        `;
+        body.appendChild(row);
+      });
+    }
+
+    renderTable();
+  </script>
+</body>
+</html>

@@ -1,0 +1,243 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <title>Score Entry | Nsuta Portal</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <script src="router.js"></script>
+  <script src="guard.js"></script>
+  <link rel="stylesheet" href="style.css" />
+
+  <script>
+    const activeUser = JSON.parse(localStorage.getItem("activeUser"));
+    if (!sessionStorage.getItem("role") && activeUser?.role === "teacher") {
+      sessionStorage.setItem("username", activeUser.username);
+      sessionStorage.setItem("displayName", activeUser.displayName);
+      sessionStorage.setItem("role", activeUser.role);
+    }
+  </script>
+
+  <style>
+    body {
+      font-family: Arial, sans-serif;
+      background: #f4f9ff;
+      padding: 30px;
+      max-width: 920px;
+      margin: auto;
+    }
+
+    header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-bottom: 30px;
+    }
+
+    h2 {
+      font-size: 22px;
+      margin: 0;
+    }
+
+    .logout {
+      background: #c0392b;
+      color: white;
+      padding: 8px 14px;
+      border: none;
+      border-radius: 5px;
+      cursor: pointer;
+      font-size: 14px;
+    }
+
+    select {
+      width: 100%;
+      padding: 10px;
+      margin-bottom: 20px;
+      font-size: 14px;
+    }
+
+    table {
+      width: 100%;
+      border-collapse: collapse;
+      font-size: 14px;
+    }
+
+    th, td {
+      border: 1px solid #ccc;
+      padding: 6px;
+      text-align: center;
+    }
+
+    th {
+      background: #f0f0f0;
+    }
+
+    input[type="number"] {
+      width: 80px;
+      padding: 6px;
+    }
+
+    button {
+      background: #0077cc;
+      color: white;
+      padding: 8px 12px;
+      font-size: 14px;
+      border: none;
+      border-radius: 5px;
+      cursor: pointer;
+    }
+
+    button:hover {
+      background: #005fa3;
+    }
+
+    .submitted {
+      background: #dff0d8;
+    }
+  </style>
+</head>
+<body>
+  <header>
+    <h2>📝 Assigned Teacher: <span id="displayName">...</span></h2>
+    <button class="logout" onclick="logout()">Logout</button>
+  </header>
+
+  <label for="assignmentSelect">Select Subject & Class</label>
+  <select id="assignmentSelect"></select>
+
+  <div id="scoreTableContainer"></div>
+
+  <script>
+    const students = JSON.parse(localStorage.getItem("studentDatabase")) || [];
+    const teacherName = sessionStorage.getItem("username");
+    const displayName = sessionStorage.getItem("displayName");
+    document.getElementById("displayName").textContent = displayName;
+
+    const submittedScores = JSON.parse(localStorage.getItem("submittedScores")) || [];
+    const teacherSubjects = JSON.parse(localStorage.getItem("teacherSubjects")) || {};
+    const myAssignments = teacherSubjects[teacherName] || [];
+
+    const assignmentSelect = document.getElementById("assignmentSelect");
+
+    myAssignments.forEach(({ subject, class: cls }) => {
+      const opt = document.createElement("option");
+      opt.value = `${subject}|${cls}`;
+      opt.textContent = `${subject} (${cls})`;
+      assignmentSelect.appendChild(opt);
+    });
+
+    assignmentSelect.addEventListener("change", renderTable);
+
+    function renderTable() {
+      const container = document.getElementById("scoreTableContainer");
+      container.innerHTML = "";
+
+      const selected = assignmentSelect.value;
+      if (!selected) return;
+
+      const [subject, className] = selected.split("|");
+      const classStudents = students.filter(s => s.class === className);
+
+      const table = document.createElement("table");
+      table.innerHTML = `
+        <thead>
+          <tr>
+            <th>Student ID</th>
+            <th>Name</th>
+            <th>SBA (60)</th>
+            <th>Exam (100)</th>
+            <th>Total</th>
+            <th>Action</th>
+          </tr>
+        </thead>
+        <tbody>
+          ${classStudents.map(s => {
+            const existing = submittedScores.find(e =>
+              e.studentId === s.studentId &&
+              e.subject === subject &&
+              e.class === className &&
+              e.teacher === teacherName
+            );
+
+            return `
+              <tr class="${existing ? 'submitted' : ''}">
+                <td>${s.studentId}</td>
+                <td>${s.name}</td>
+                <td><input type="number" id="sba-${s.studentId}" min="0" max="60" value="${existing?.classScore ? Math.round((existing.classScore / 50) * 60) : ''}" /></td>
+                <td><input type="number" id="exam-${s.studentId}" min="0" max="100" value="${existing?.examScore ? (existing.examScore / 50 * 100).toFixed(0) : ''}" /></td>
+                <td id="final-${s.studentId}">${existing?.finalScore || '–'}</td>
+                <td><button onclick="submitScore('${s.studentId}', '${s.name}', '${subject}', '${className}')">Save</button></td>
+              </tr>
+            `;
+          }).join("")}
+        </tbody>
+      `;
+      container.appendChild(table);
+    }
+
+    function convertScores(sba, exam) {
+      const scaledSBA = (sba / 60) * 50;
+      const scaledExam = (exam / 100) * 50;
+      return {
+        classScore: Math.round(scaledSBA),
+        examScore: Math.round(scaledExam),
+        finalScore: Math.round(scaledSBA + scaledExam)
+      };
+    }
+
+    function submitScore(studentId, studentName, subject, cls) {
+      const rawSBA = parseFloat(document.getElementById(`sba-${studentId}`).value);
+      const rawExam = parseFloat(document.getElementById(`exam-${studentId}`).value);
+
+      if (isNaN(rawSBA) || isNaN(rawExam)) {
+        alert("Please enter both SBA and Exam scores.");
+        return;
+      }
+
+      const { classScore, examScore, finalScore } = convertScores(rawSBA, rawExam);
+
+      // Remove existing submission if any
+      const existingIndex = submittedScores.findIndex(e =>
+        e.studentId === studentId &&
+        e.subject === subject &&
+        e.class === cls &&
+        e.teacher === teacherName
+      );
+
+      const newEntry = {
+        teacher: teacherName,
+        studentId,
+        studentName,
+        class: cls,
+        subject,
+        classScore,
+        examScore,
+        finalScore,
+        status: "Pending"
+      };
+
+      if (existingIndex >= 0) {
+        submittedScores[existingIndex] = newEntry;
+      } else {
+        submittedScores.push(newEntry);
+      }
+
+      localStorage.setItem("submittedScores", JSON.stringify(submittedScores));
+      document.getElementById(`final-${studentId}`).textContent = finalScore;
+      alert(`✅ Score saved for ${studentName}`);
+      renderTable();
+    }
+
+    function logout() {
+      sessionStorage.clear();
+      localStorage.removeItem("activeUser");
+      location.href = "login.html";
+    }
+
+    // Auto-select first assignment if any
+    if (assignmentSelect.options.length > 0) {
+      assignmentSelect.selectedIndex = 0;
+      renderTable();
+    }
+  </script>
+</body>
+</html>

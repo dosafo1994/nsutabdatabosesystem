@@ -1,0 +1,192 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <title>Review Score Submissions</title>
+  <link rel="stylesheet" href="style.css" />
+  <script src="router.js"></script>
+
+  <!-- ✅ Restore session from activeUser if needed -->
+  <script>
+    const activeUser = JSON.parse(localStorage.getItem("activeUser"));
+    if (
+      !sessionStorage.getItem("role") &&
+      activeUser?.role === "headteacher"
+    ) {
+      sessionStorage.setItem("username", activeUser.username);
+      sessionStorage.setItem("displayName", activeUser.displayName);
+      sessionStorage.setItem("role", activeUser.role);
+    }
+  </script>
+  <script src="guard.js"></script>
+
+  <style>
+    body {
+      font-family: Arial, sans-serif;
+      padding: 40px;
+      max-width: 1000px;
+      margin: auto;
+      background: #f4f9ff;
+    }
+
+    h2 {
+      margin-bottom: 20px;
+    }
+
+    select {
+      padding: 8px;
+      font-size: 14px;
+    }
+
+    table {
+      width: 100%;
+      border-collapse: collapse;
+      margin-top: 20px;
+      font-size: 14px;
+    }
+
+    th, td {
+      border: 1px solid #ccc;
+      padding: 6px;
+      text-align: center;
+    }
+
+    th {
+      background: #f0f0f0;
+    }
+
+    .badge {
+      font-size: 12px;
+      padding: 4px 8px;
+      border-radius: 4px;
+      color: white;
+    }
+
+    .Pending { background: orange; }
+    .Accepted { background: green; }
+    .Rejected { background: crimson; }
+
+    .action-buttons button {
+      margin: 2px;
+      padding: 4px 10px;
+      font-size: 12px;
+      cursor: pointer;
+    }
+
+    #summary {
+      margin-top: 10px;
+      font-weight: bold;
+    }
+
+    @media print {
+      select, .action-buttons, #summary { display: none; }
+    }
+  </style>
+</head>
+<body>
+  <h2>📝 Submitted Score Entries</h2>
+
+  <label for="statusFilter"><strong>Status Filter:</strong></label>
+  <select id="statusFilter" onchange="renderTable()">
+    <option value="">All</option>
+    <option value="Pending">Pending</option>
+    <option value="Accepted">Accepted</option>
+    <option value="Rejected">Rejected</option>
+  </select>
+
+  <div id="summary"></div>
+
+  <table>
+    <thead>
+      <tr>
+        <th>Teacher</th>
+        <th>Subject</th>
+        <th>Class</th>
+        <th>Student ID</th>
+        <th>Name</th>
+        <th>SBA</th>
+        <th>Exam</th>
+        <th>Final</th>
+        <th>Status</th>
+        <th class="action-buttons">Actions</th>
+      </tr>
+    </thead>
+    <tbody id="scoreTable"></tbody>
+  </table>
+
+  <script>
+    let submitted = JSON.parse(localStorage.getItem("submittedScores")) || [];
+
+    function renderTable() {
+      const tbody = document.getElementById("scoreTable");
+      const filter = document.getElementById("statusFilter").value;
+      const filtered = submitted.filter(e => !filter || e.status === filter);
+      tbody.innerHTML = "";
+
+      document.getElementById("summary").textContent = 
+        `Showing ${filtered.length} submission(s)`;
+
+      filtered.forEach((entry, index) => {
+        const row = document.createElement("tr");
+
+        row.innerHTML = `
+          <td>${entry.teacher}</td>
+          <td>${entry.subject}</td>
+          <td>${entry.class}</td>
+          <td>${entry.studentId}</td>
+          <td>${entry.studentName}</td>
+          <td>${entry.classScore}</td>
+          <td>${entry.examScore}</td>
+          <td>${entry.finalScore}</td>
+          <td><span class="badge ${entry.status}">${entry.status}</span></td>
+          <td class="action-buttons">
+            ${entry.status === "Pending" ? `
+              <button onclick="updateStatus(${index}, 'Accepted')">✅ Accept</button>
+              <button onclick="updateStatus(${index}, 'Rejected')">❌ Reject</button>
+            ` : `
+              <button onclick="unlock(${index})">🔓 Unlock</button>
+            `}
+          </td>
+        `;
+
+        tbody.appendChild(row);
+      });
+    }
+
+    function updateStatus(index, status) {
+      submitted[index].status = status;
+
+      const teacher = submitted[index].teacher;
+      const notifications = JSON.parse(localStorage.getItem("teacherNotifications")) || {};
+      notifications[teacher] = notifications[teacher] || [];
+
+      notifications[teacher].push({
+        subject: submitted[index].subject,
+        class: submitted[index].class,
+        status,
+        date: new Date().toLocaleDateString()
+      });
+
+      localStorage.setItem("teacherNotifications", JSON.stringify(notifications));
+      localStorage.setItem("submittedScores", JSON.stringify(submitted));
+      renderTable();
+    }
+
+    function unlock(index) {
+      const entry = submitted[index];
+      const confirmed = confirm(`Unlock ${entry.subject} for ${entry.class} by ${entry.teacher}?`);
+      if (!confirmed) return;
+
+      submitted = submitted.filter(e =>
+        !(e.teacher === entry.teacher && e.subject === entry.subject && e.class === entry.class)
+      );
+
+      localStorage.setItem("submittedScores", JSON.stringify(submitted));
+      alert(`✅ Unlocked ${entry.subject} for ${entry.class}`);
+      renderTable();
+    }
+
+    renderTable();
+  </script>
+</body>
+</html>

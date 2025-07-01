@@ -1,0 +1,137 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <title>Term Settings | Nkawkaw Nsuta B</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <link rel="stylesheet" href="style.css" />
+  <script src="router.js"></script>
+
+  <!-- ✅ Restore session if lost -->
+  <script>
+    const activeUser = JSON.parse(localStorage.getItem("activeUser"));
+    if (
+      !sessionStorage.getItem("role") &&
+      activeUser?.role === "headteacher"
+    ) {
+      sessionStorage.setItem("username", activeUser.username);
+      sessionStorage.setItem("displayName", activeUser.displayName);
+      sessionStorage.setItem("role", activeUser.role);
+    }
+  </script>
+  <script src="guard.js"></script>
+
+  <style>
+    body {
+      font-family: Arial, sans-serif;
+      padding: 40px;
+      max-width: 500px;
+      margin: auto;
+      background: #f4f9ff;
+    }
+
+    h2 {
+      text-align: center;
+      margin-bottom: 30px;
+    }
+
+    label {
+      display: block;
+      margin-top: 20px;
+      font-weight: bold;
+    }
+
+    select, input {
+      width: 100%;
+      padding: 10px;
+      margin-top: 5px;
+      font-size: 16px;
+    }
+
+    button {
+      padding: 10px 20px;
+      margin-top: 30px;
+      background: #0077cc;
+      color: white;
+      border: none;
+      font-size: 16px;
+      border-radius: 4px;
+      cursor: pointer;
+      width: 100%;
+    }
+
+    button:hover {
+      background: #005fa3;
+    }
+
+    .status {
+      margin-top: 20px;
+      padding: 10px;
+      background: #e7f5ff;
+      border: 1px solid #b2d8ff;
+      color: #004080;
+      border-radius: 4px;
+    }
+  </style>
+</head>
+<body>
+  <h2>📆 Academic Term Settings</h2>
+
+  <label for="term">Select Term</label>
+  <select id="term">
+    <option value="Term 1">Term 1</option>
+    <option value="Term 2">Term 2</option>
+    <option value="Term 3">Term 3</option>
+  </select>
+
+  <label for="year">Academic Year</label>
+  <input type="text" id="year" placeholder="e.g. 2025" />
+
+  <label for="promotion">Promotional Term?</label>
+  <select id="promotion">
+    <option value="false">No</option>
+    <option value="true">Yes</option>
+  </select>
+
+  <button onclick="saveTerm()">✅ Save Term Settings</button>
+
+  <div class="status" id="statusBox">Loading current term...</div>
+
+  <script>
+    const termData = JSON.parse(localStorage.getItem("schoolTerm")) || {
+      term: "Term 1",
+      year: "2025",
+      isPromotion: false
+    };
+
+    document.getElementById("term").value = termData.term;
+    document.getElementById("year").value = termData.year;
+    document.getElementById("promotion").value = termData.isPromotion ? "true" : "false";
+
+    function saveTerm() {
+      const newTerm = document.getElementById("term").value;
+      const newYear = document.getElementById("year").value.trim();
+      const isPromotion = document.getElementById("promotion").value === "true";
+
+      if (!newYear) {
+        alert("Please enter the academic year.");
+        return;
+      }
+
+      const updated = {
+        term: newTerm,
+        year: newYear,
+        isPromotion
+      };
+
+      localStorage.setItem("schoolTerm", JSON.stringify(updated));
+      document.getElementById("statusBox").textContent = 
+        `✅ Settings saved: ${newTerm} | ${newYear} | Promotion: ${isPromotion ? "Yes" : "No"}`;
+    }
+
+    // Initial status display
+    document.getElementById("statusBox").textContent = 
+      `Current Term: ${termData.term}, Year: ${termData.year}, Promotion: ${termData.isPromotion ? "Yes" : "No"}`;
+  </script>
+</body>
+</html>

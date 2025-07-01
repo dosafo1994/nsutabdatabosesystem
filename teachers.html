@@ -1,0 +1,184 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <title>Teacher Allocation | Nsuta Portal</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <script src="router.js"></script>
+  <link rel="stylesheet" href="style.css" />
+
+  <script>
+    const activeUser = JSON.parse(localStorage.getItem("activeUser"));
+    if (!sessionStorage.getItem("role") && activeUser?.role === "headteacher") {
+      sessionStorage.setItem("username", activeUser.username);
+      sessionStorage.setItem("displayName", activeUser.displayName);
+      sessionStorage.setItem("role", activeUser.role);
+    }
+  </script>
+  <script src="guard.js"></script>
+
+  <style>
+    body {
+      font-family: Arial, sans-serif;
+      background: #f4f9ff;
+      padding: 40px;
+      max-width: 800px;
+      margin: auto;
+    }
+
+    h2 {
+      text-align: center;
+      margin-bottom: 20px;
+    }
+
+    select, input {
+      width: 100%;
+      padding: 10px;
+      margin: 10px 0;
+      font-size: 14px;
+    }
+
+    button {
+      padding: 10px 20px;
+      background: #0077cc;
+      color: white;
+      border: none;
+      font-size: 14px;
+      border-radius: 4px;
+      cursor: pointer;
+      margin-bottom: 15px;
+    }
+
+    button:hover {
+      background: #005fa3;
+    }
+
+    table {
+      width: 100%;
+      border-collapse: collapse;
+      font-size: 14px;
+      margin-top: 20px;
+    }
+
+    th, td {
+      border: 1px solid #ccc;
+      padding: 8px;
+      text-align: left;
+    }
+
+    th {
+      background: #f0f0f0;
+    }
+
+    .header-row {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 10px;
+    }
+  </style>
+</head>
+<body>
+  <h2>👥 Assign Subjects & Classes to Teachers</h2>
+
+  <label for="teacherSelect">Select Teacher</label>
+  <select id="teacherSelect"></select>
+
+  <label for="subjectInput">Subject</label>
+  <input type="text" id="subjectInput" placeholder="e.g. Mathematics" />
+
+  <label for="classInput">Class</label>
+  <select id="classInput">
+    <option value="">-- Select Class --</option>
+    <option value="JHS 1">JHS 1</option>
+    <option value="JHS 2">JHS 2</option>
+    <option value="JHS 3">JHS 3</option>
+  </select>
+
+  <button onclick="assignSubject()">+ Assign Subject</button>
+  <button onclick="clearAssignments()">🗑 Clear All for Teacher</button>
+
+  <table id="assignmentTable">
+    <thead>
+      <tr>
+        <th>Teacher</th>
+        <th>Subject</th>
+        <th>Class</th>
+      </tr>
+    </thead>
+    <tbody></tbody>
+  </table>
+
+  <script>
+    const users = JSON.parse(localStorage.getItem("userAccounts")) || [];
+    const teacherSubjects = JSON.parse(localStorage.getItem("teacherSubjects")) || {};
+
+    const teachers = users.filter(u => u.role === "teacher");
+    const teacherSelect = document.getElementById("teacherSelect");
+    const assignmentTable = document.getElementById("assignmentTable").querySelector("tbody");
+
+    teachers.forEach(t => {
+      const opt = document.createElement("option");
+      opt.value = t.phone;
+      opt.textContent = `${t.name} (${t.phone})`;
+      teacherSelect.appendChild(opt);
+    });
+
+    function assignSubject() {
+      const phone = teacherSelect.value;
+      const subject = document.getElementById("subjectInput").value.trim();
+      const cls = document.getElementById("classInput").value;
+
+      if (!phone || !subject || !cls) {
+        alert("Please select teacher, subject, and class.");
+        return;
+      }
+
+      teacherSubjects[phone] = teacherSubjects[phone] || [];
+
+      const alreadyExists = teacherSubjects[phone].some(s =>
+        s.subject === subject && s.class === cls
+      );
+
+      if (alreadyExists) {
+        alert("Subject already assigned to this teacher.");
+        return;
+      }
+
+      teacherSubjects[phone].push({ subject, class: cls });
+      localStorage.setItem("teacherSubjects", JSON.stringify(teacherSubjects));
+      renderTable();
+    }
+
+    function clearAssignments() {
+      const phone = teacherSelect.value;
+      if (!phone) return;
+
+      const confirmed = confirm("Remove all subjects for this teacher?");
+      if (confirmed) {
+        delete teacherSubjects[phone];
+        localStorage.setItem("teacherSubjects", JSON.stringify(teacherSubjects));
+        renderTable();
+      }
+    }
+
+    function renderTable() {
+      assignmentTable.innerHTML = "";
+
+      Object.keys(teacherSubjects).forEach(phone => {
+        const teacher = teachers.find(t => t.phone === phone);
+        teacherSubjects[phone].forEach(assign => {
+          const row = document.createElement("tr");
+          row.innerHTML = `
+            <td>${teacher ? teacher.name : phone}</td>
+            <td>${assign.subject}</td>
+            <td>${assign.class}</td>
+          `;
+          assignmentTable.appendChild(row);
+        });
+      });
+    }
+
+    renderTable();
+  </script>
+</body>
+</html>

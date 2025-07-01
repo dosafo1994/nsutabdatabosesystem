@@ -1,0 +1,186 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <title>Headteacher Profile | Nsuta Portal</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <link rel="stylesheet" href="style.css" />
+  <script src="router.js"></script>
+
+  <!-- Session restoration -->
+  <script>
+    const activeUser = JSON.parse(localStorage.getItem("activeUser"));
+    if (
+      !sessionStorage.getItem("role") &&
+      activeUser?.role === "headteacher"
+    ) {
+      sessionStorage.setItem("username", activeUser.username);
+      sessionStorage.setItem("displayName", activeUser.displayName);
+      sessionStorage.setItem("role", activeUser.role);
+    }
+  </script>
+  <script src="guard.js"></script>
+
+  <style>
+    body {
+      font-family: Arial, sans-serif;
+      background: #f4f9ff;
+      padding: 40px;
+      max-width: 500px;
+      margin: auto;
+    }
+
+    h2 {
+      text-align: center;
+      margin-bottom: 20px;
+    }
+
+    label {
+      display: block;
+      margin-top: 20px;
+      font-weight: bold;
+    }
+
+    input {
+      width: 100%;
+      padding: 10px;
+      font-size: 16px;
+      margin-top: 5px;
+    }
+
+    button {
+      padding: 10px 20px;
+      margin-top: 30px;
+      background: #0077cc;
+      color: white;
+      border: none;
+      font-size: 16px;
+      border-radius: 4px;
+      cursor: pointer;
+      width: 100%;
+    }
+
+    button:hover {
+      background: #005fa3;
+    }
+
+    .status {
+      margin-top: 20px;
+      padding: 10px;
+      text-align: center;
+      border-radius: 4px;
+      font-size: 14px;
+    }
+
+    .success {
+      background: #e7ffe7;
+      color: green;
+      border: 1px solid #b2e0b2;
+    }
+
+    .error {
+      background: #ffe7e7;
+      color: crimson;
+      border: 1px solid #e0b2b2;
+    }
+
+    .back {
+      margin-top: 30px;
+      text-align: center;
+      font-size: 14px;
+    }
+
+    .back a {
+      color: #0077cc;
+      text-decoration: none;
+    }
+
+    .back a:hover {
+      text-decoration: underline;
+    }
+  </style>
+</head>
+<body>
+  <h2>👤 Headteacher Profile</h2>
+
+  <label>Role</label>
+  <input type="text" value="Headteacher" disabled />
+
+  <label>School</label>
+  <input type="text" value="Nkawkaw Nsuta B Basic School" disabled />
+
+  <label for="name">Full Name</label>
+  <input type="text" id="name" />
+
+  <label for="phone">Phone Number</label>
+  <input type="text" id="phone" />
+
+  <label for="pin">Change PIN (optional)</label>
+  <input type="password" id="pin" placeholder="Enter new 4-digit PIN" maxlength="4" />
+
+  <button onclick="updateProfile()">Save Changes</button>
+
+  <div id="statusBox"></div>
+
+  <div class="back">
+    <a href="index.html">← Return to Dashboard</a>
+  </div>
+
+  <script>
+    const users = JSON.parse(localStorage.getItem("userAccounts")) || [];
+    const username = sessionStorage.getItem("username");
+    const head = users.find(u => u.phone === username && u.role === "headteacher");
+
+    if (head) {
+      document.getElementById("name").value = head.name || "";
+      document.getElementById("phone").value = head.phone || "";
+    }
+
+    function updateProfile() {
+      const newName = document.getElementById("name").value.trim();
+      const newPhone = document.getElementById("phone").value.trim();
+      const newPin = document.getElementById("pin").value.trim();
+
+      const statusBox = document.getElementById("statusBox");
+
+      if (!newName || !newPhone) {
+        statusBox.innerHTML = `<div class="status error">Please enter name and phone.</div>`;
+        return;
+      }
+
+      if (
+        users.some(u => u.phone === newPhone && u.phone !== username)
+      ) {
+        statusBox.innerHTML = `<div class="status error">Phone number already used.</div>`;
+        return;
+      }
+
+      head.name = newName;
+      head.phone = newPhone;
+
+      if (newPin) {
+        if (!/^\d{4}$/.test(newPin)) {
+          statusBox.innerHTML = `<div class="status error">PIN must be 4 digits.</div>`;
+          return;
+        }
+        head.pin = newPin;
+      }
+
+      localStorage.setItem("userAccounts", JSON.stringify(users));
+
+      // Update session and activeUser
+      sessionStorage.setItem("username", newPhone);
+      sessionStorage.setItem("displayName", newName);
+
+      localStorage.setItem("activeUser", JSON.stringify({
+        username: newPhone,
+        displayName: newName,
+        role: "headteacher"
+      }));
+
+      statusBox.innerHTML = `<div class="status success">✅ Profile updated successfully</div>`;
+      document.getElementById("pin").value = "";
+    }
+  </script>
+</body>
+</html>

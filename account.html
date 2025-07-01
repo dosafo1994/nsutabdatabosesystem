@@ -1,0 +1,196 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <title>Manage Teacher Accounts | Nsuta Portal</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <script src="router.js"></script>
+  <script>
+    const activeUser = JSON.parse(localStorage.getItem("activeUser"));
+    if (!sessionStorage.getItem("role") && activeUser?.role === "headteacher") {
+      sessionStorage.setItem("username", activeUser.username);
+      sessionStorage.setItem("displayName", activeUser.displayName);
+      sessionStorage.setItem("role", activeUser.role);
+    }
+  </script>
+  <script src="guard.js"></script>
+  <style>
+    body {
+      font-family: Arial, sans-serif;
+      background: #f4f9ff;
+      padding: 40px;
+      max-width: 850px;
+      margin: auto;
+    }
+
+    h2 {
+      text-align: center;
+      margin-bottom: 25px;
+    }
+
+    label {
+      font-weight: bold;
+      display: block;
+      margin-top: 15px;
+    }
+
+    input {
+      width: 100%;
+      padding: 10px;
+      font-size: 14px;
+      margin-top: 5px;
+    }
+
+    button {
+      padding: 10px 15px;
+      background: #0077cc;
+      color: white;
+      border: none;
+      font-size: 14px;
+      border-radius: 4px;
+      cursor: pointer;
+      margin-top: 20px;
+    }
+
+    button:hover {
+      background: #005fa3;
+    }
+
+    table {
+      width: 100%;
+      border-collapse: collapse;
+      font-size: 14px;
+      margin-top: 30px;
+    }
+
+    th, td {
+      border: 1px solid #ccc;
+      padding: 8px;
+    }
+
+    th {
+      background: #f0f0f0;
+    }
+
+    .actions button {
+      margin-right: 5px;
+    }
+
+    .edit {
+      background: #28a745;
+    }
+
+    .remove {
+      background: #c0392b;
+    }
+  </style>
+</head>
+<body>
+  <h2>👥 Manage Teacher Accounts</h2>
+
+  <label for="name">Full Name</label>
+  <input type="text" id="name" />
+
+  <label for="phone">Phone Number</label>
+  <input type="text" id="phone" placeholder="e.g. 024XXXXXXX" />
+
+  <label for="pin">4-digit PIN</label>
+  <input type="password" id="pin" maxlength="4" />
+
+  <button onclick="saveTeacher()">Save Teacher</button>
+
+  <table>
+    <thead>
+      <tr>
+        <th>Name</th>
+        <th>Phone</th>
+        <th>Role</th>
+        <th>Actions</th>
+      </tr>
+    </thead>
+    <tbody id="teacherTable"></tbody>
+  </table>
+
+  <script>
+    let userAccounts = JSON.parse(localStorage.getItem("userAccounts")) || [];
+    let editingPhone = null;
+
+    function saveTeacher() {
+      const name = document.getElementById("name").value.trim();
+      const phone = document.getElementById("phone").value.trim();
+      const pin = document.getElementById("pin").value.trim();
+
+      if (!name || !phone || !pin) {
+        alert("Please fill in all fields.");
+        return;
+      }
+
+      if (!/^\d{4}$/.test(pin)) {
+        alert("PIN must be 4 digits.");
+        return;
+      }
+
+      if (editingPhone) {
+        const index = userAccounts.findIndex(u => u.phone === editingPhone);
+        userAccounts[index] = { name, phone, pin, role: "teacher" };
+        editingPhone = null;
+      } else {
+        if (userAccounts.some(u => u.phone === phone)) {
+          alert("Phone number already exists.");
+          return;
+        }
+        userAccounts.push({ name, phone, pin, role: "teacher" });
+      }
+
+      localStorage.setItem("userAccounts", JSON.stringify(userAccounts));
+      clearForm();
+      renderTable();
+      alert("✅ Teacher account saved.");
+    }
+
+    function editTeacher(phone) {
+      const t = userAccounts.find(u => u.phone === phone);
+      if (!t) return;
+      editingPhone = phone;
+      document.getElementById("name").value = t.name;
+      document.getElementById("phone").value = t.phone;
+      document.getElementById("pin").value = t.pin;
+    }
+
+    function removeTeacher(phone) {
+      if (!confirm("Are you sure you want to delete this account?")) return;
+      userAccounts = userAccounts.filter(u => u.phone !== phone);
+      localStorage.setItem("userAccounts", JSON.stringify(userAccounts));
+      renderTable();
+    }
+
+    function clearForm() {
+      editingPhone = null;
+      document.getElementById("name").value = "";
+      document.getElementById("phone").value = "";
+      document.getElementById("pin").value = "";
+    }
+
+    function renderTable() {
+      const tbody = document.getElementById("teacherTable");
+      tbody.innerHTML = "";
+
+      userAccounts.filter(u => u.role === "teacher").forEach(t => {
+        const row = document.createElement("tr");
+        row.innerHTML = `
+          <td>${t.name}</td>
+          <td>${t.phone}</td>
+          <td>${t.role}</td>
+          <td class="actions">
+            <button class="edit" onclick="editTeacher('${t.phone}')">✏️ Edit</button>
+            <button class="remove" onclick="removeTeacher('${t.phone}')">🗑 Delete</button>
+          </td>
+        `;
+        tbody.appendChild(row);
+      });
+    }
+
+    renderTable();
+  </script>
+</body>
+</html>

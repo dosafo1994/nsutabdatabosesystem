@@ -1,0 +1,275 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <title>Terminal Report | Nsuta Portal</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <script src="router.js"></script>
+  <script src="html2pdf.bundle.min.js"></script>
+  <script src="guard.js"></script>
+  <link rel="stylesheet" href="style.css" />
+
+  <script>
+    const activeUser = JSON.parse(localStorage.getItem("activeUser"));
+    if (!sessionStorage.getItem("role") && activeUser?.role === "headteacher") {
+      sessionStorage.setItem("username", activeUser.username);
+      sessionStorage.setItem("displayName", activeUser.displayName);
+      sessionStorage.setItem("role", activeUser.role);
+    }
+  </script>
+
+  <style>
+    body {
+      font-family: Arial, sans-serif;
+      background: #fff;
+      padding: 40px;
+      max-width: 950px;
+      margin: auto;
+    }
+
+    .controls {
+      margin-bottom: 20px;
+    }
+
+    select, button {
+      padding: 8px 12px;
+      margin-right: 10px;
+      font-size: 14px;
+    }
+
+    .report {
+      border: 1px solid #ccc;
+      padding: 30px;
+      margin-top: 20px;
+    }
+
+    .top-row {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-bottom: 10px;
+    }
+
+    .logo-box, .photo-box {
+      width: 120px;
+      height: 120px;
+      border: 1px solid #ccc;
+      background: #f9f9f9;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 12px;
+      color: #888;
+    }
+
+    .school-header {
+      text-align: center;
+      margin-bottom: 20px;
+    }
+
+    .student-meta {
+      margin-top: 20px;
+      line-height: 1.6;
+    }
+
+    .score-table {
+      width: 100%;
+      margin-top: 20px;
+      border-collapse: collapse;
+      font-size: 14px;
+    }
+
+    .score-table th, .score-table td {
+      border: 1px solid #ccc;
+      padding: 6px;
+      text-align: center;
+    }
+
+    .score-table th {
+      background: #f0f0f0;
+    }
+
+    .footer-details {
+      margin-top: 30px;
+      font-size: 14px;
+      line-height: 1.6;
+    }
+
+    @media print {
+      .controls { display: none; }
+      body { background: none; }
+    }
+  </style>
+</head>
+<body>
+  <div class="controls">
+    <select id="studentSelect"></select>
+    <button onclick="generateReport()">🖨️ Build Report</button>
+    <button onclick="downloadPDF()">📥 Download PDF</button>
+  </div>
+
+  <div id="reportContainer"></div>
+
+  <script>
+    const students = JSON.parse(localStorage.getItem("studentDatabase")) || [];
+    const scoresData = JSON.parse(localStorage.getItem("submittedScores")) || [];
+    const termRemarks = JSON.parse(localStorage.getItem("termRemarks")) || {};
+    const termInfo = JSON.parse(localStorage.getItem("schoolTerm")) || {};
+    const studentSelect = document.getElementById("studentSelect");
+
+    students.forEach(s => {
+      const opt = document.createElement("option");
+      opt.value = s.studentId;
+      opt.textContent = `${s.name} (${s.class})`;
+      studentSelect.appendChild(opt);
+    });
+
+    function ordinal(i) {
+      const j = i % 10, k = i % 100;
+      if (j == 1 && k != 11) return i + "st";
+      if (j == 2 && k != 12) return i + "nd";
+      if (j == 3 && k != 13) return i + "rd";
+      return i + "th";
+    }
+
+    function getGradePoint(score) {
+      if (score >= 90) return 1;
+      if (score >= 80) return 2;
+      if (score >= 70) return 3;
+      if (score >= 60) return 4;
+      if (score >= 55) return 5;
+      if (score >= 50) return 6;
+      if (score >= 40) return 7;
+      if (score >= 35) return 8;
+      return 9;
+    }
+
+    function getRemark(point) {
+      switch (point) {
+        case 1: return "DISTINCTION";
+        case 2: return "EXCELLENT";
+        case 3: return "VERY GOOD";
+        case 4: return "GOOD";
+        case 5: return "FAIR";
+        case 6: return "AVERAGE";
+        case 7: return "LOW AVERAGE";
+        case 8: return "NEEDS SUPPORT";
+        default: return "WEAK";
+      }
+    }
+
+    function getSubjectPosition(subject, studentId, className) {
+      const classmates = students.filter(s => s.class === className);
+      const relevantScores = scoresData.filter(e => classmates.some(c => c.studentId === e.studentId) && e.subject === subject);
+      const ranked = relevantScores.sort((a, b) => b.finalScore - a.finalScore);
+      const index = ranked.findIndex(r => r.studentId === studentId);
+      return index >= 0 ? ordinal(index + 1) : "-";
+    }
+
+    function generateReport() {
+      const id = studentSelect.value;
+      const student = students.find(s => s.studentId === id);
+      if (!student) return;
+
+      const scores = scoresData.filter(s => s.studentId === id);
+      const enriched = scores.map(s => {
+        const gp = getGradePoint(s.finalScore);
+        return {
+          subject: s.subject,
+          sba: s.classScore,
+          exam: s.examScore,
+          total: s.finalScore,
+          grade: gp,
+          remark: getRemark(gp),
+          position: getSubjectPosition(s.subject, id, student.class)
+        };
+      });
+
+      const total = enriched.reduce((acc, s) => acc + s.total, 0);
+      const rmk = termRemarks[id] || {};
+
+      const reportContainer = document.getElementById("reportContainer");
+      reportContainer.innerHTML = `
+        <div class="report" id="printable">
+          <div class="top-row">
+            <div class="logo-box">Logo</div>
+            <div class="photo-box">Photo</div>
+          </div>
+
+          <div class="school-header">
+            <h2>GHANA EDUCATION SERVICE</h2>
+            <h3>Nkawkaw Nsuta B Basic School</h3>
+            <p><em>KNOWLEDGE IS POWER</em></p>
+            <h3>TERMINAL REPORT</h3>
+          </div>
+
+          <div class="student-meta">
+            <p><strong>NAME:</strong> ${student.name}</p>
+            <p><strong>NO. ON ROLL:</strong> ${student.studentId}</p>
+            <p><strong>CLASS:</strong> ${student.class}</p>
+            <p><strong>TERM:</strong> ${termInfo.term || "-"}</p>
+            <p><strong>YEAR:</strong> ${termInfo.year || "-"}</p>
+            <p><strong>POSITION IN CLASS:</strong> ${rmk.position || "-"}</p>
+            <p><strong>DATE OF VACATION:</strong> Thursday, April 17, 2025</p>
+            <p><strong>NEXT TERM BEGINS ON:</strong> Tuesday, May 6, 2025</p>
+          </div>
+
+          <table class="score-table">
+            <thead>
+              <tr>
+                <th>SUBJECT</th>
+                <th>SBA</th>
+                <th>EXAM</th>
+                <th>TOTAL</th>
+                <th>GRADE</th>
+                <th>POSITION</th>
+                <th>REMARK</th>
+              </tr>
+            </thead>
+            <tbody>
+              ${enriched.map(s => `
+                <tr>
+                  <td>${s.subject}</td>
+                  <td>${s.sba}</td>
+                  <td>${s.exam}</td>
+                  <td>${s.total}</td>
+                  <td>${s.grade}</td>
+                  <td>${s.position}</td>
+                  <td>${s.remark}</td>
+                </tr>
+              `).join("")}
+            </tbody>
+          </table>
+
+          <div class="footer-details">
+          <div class="footer-details">
+            <p><strong>TOTAL:</strong> ${total}</p>
+            <p><strong>ATTENDANCE:</strong> ${rmk.attendance || "-"}</p>
+            <p><strong>CONDUCT:</strong> ${rmk.conduct || "-"}</p>
+            <p><strong>INTEREST/TALENT:</strong> ${rmk.talent || "-"}</p>
+            <p><strong>CLASS TEACHER'S REMARK:</strong> ${rmk.teacherRemark || "-"}</p>
+            <p><strong>CLASS TEACHER:</strong> ${rmk.teacher || "-"}</p>
+            <p><strong>HEADTEACHER:</strong> ${rmk.headteacher || sessionStorage.getItem("displayName") || "-"}</p>
+          </div>
+        </div>
+      `;
+    }
+
+    function downloadPDF() {
+      const report = document.getElementById("printable");
+      if (!report) {
+        alert("Please build a report first.");
+        return;
+      }
+
+      html2pdf().set({
+        margin: 0.5,
+        filename: 'terminal-report.pdf',
+        image: { type: 'jpeg', quality: 0.98 },
+        html2canvas: { scale: 2 },
+        jsPDF: { unit: 'in', format: 'letter', orientation: 'portrait' }
+      }).from(report).save();
+    }
+  </script>
+</body>
+</html>

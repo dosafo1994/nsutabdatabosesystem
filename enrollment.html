@@ -1,0 +1,235 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <title>Student Enrollment | Nkawkaw Nsuta B</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <link rel="stylesheet" href="style.css" />
+  <script src="router.js"></script>
+
+  <!-- ✅ Restore session -->
+  <script>
+    const activeUser = JSON.parse(localStorage.getItem("activeUser"));
+    if (
+      !sessionStorage.getItem("role") &&
+      activeUser?.role === "headteacher"
+    ) {
+      sessionStorage.setItem("username", activeUser.username);
+      sessionStorage.setItem("displayName", activeUser.displayName);
+      sessionStorage.setItem("role", activeUser.role);
+    }
+  </script>
+  <script src="guard.js"></script>
+
+  <style>
+    body {
+      font-family: Arial, sans-serif;
+      padding: 40px;
+      max-width: 800px;
+      margin: auto;
+      background: #f4f9ff;
+    }
+
+    h2 {
+      text-align: center;
+      margin-bottom: 30px;
+    }
+
+    label {
+      font-weight: bold;
+      margin-top: 20px;
+      display: block;
+    }
+
+    input, select {
+      width: 100%;
+      padding: 10px;
+      font-size: 16px;
+      margin-top: 5px;
+    }
+
+    button {
+      padding: 10px 20px;
+      margin-top: 20px;
+      background: #0077cc;
+      color: white;
+      border: none;
+      font-size: 16px;
+      border-radius: 4px;
+      cursor: pointer;
+    }
+
+    button:hover {
+      background: #005fa3;
+    }
+
+    .student-table {
+      margin-top: 40px;
+      width: 100%;
+      border-collapse: collapse;
+    }
+
+    .student-table th, .student-table td {
+      border: 1px solid #ccc;
+      padding: 8px;
+      text-align: left;
+    }
+
+    .student-table th {
+      background: #f4f4f4;
+    }
+
+    .file-input {
+      margin-top: 10px;
+    }
+  </style>
+</head>
+<body>
+  <h2>📋 Student Enrollment</h2>
+
+  <label for="name">Full Name</label>
+  <input type="text" id="name" />
+
+  <label for="id">Student ID</label>
+  <input type="text" id="id" />
+
+  <label for="class">Class</label>
+  <select id="class">
+    <option value="">-- Select Class --</option>
+    <option value="JHS 1">JHS 1</option>
+    <option value="JHS 2">JHS 2</option>
+    <option value="JHS 3">JHS 3</option>
+  </select>
+
+  <label for="gender">Gender</label>
+  <select id="gender">
+    <option value="">-- Select Gender --</option>
+    <option value="Male">Male</option>
+    <option value="Female">Female</option>
+  </select>
+
+  <button onclick="addStudent()">+ Add Student</button>
+  <button onclick="downloadCSV()">📥 Download CSV</button>
+  <input type="file" id="csvFile" class="file-input" accept=".csv" onchange="uploadCSV()" />
+
+  <table class="student-table">
+    <thead>
+      <tr>
+        <th>ID</th>
+        <th>Name</th>
+        <th>Class</th>
+        <th>Gender</th>
+        <th>Remove</th>
+      </tr>
+    </thead>
+    <tbody id="table-body"></tbody>
+  </table>
+
+  <script>
+    let students = JSON.parse(localStorage.getItem("studentDatabase")) || [];
+
+    function saveData() {
+      localStorage.setItem("studentDatabase", JSON.stringify(students));
+    }
+
+    function addStudent() {
+      const name = document.getElementById("name").value.trim();
+      const id = document.getElementById("id").value.trim();
+      const cls = document.getElementById("class").value;
+      const gender = document.getElementById("gender").value;
+
+      if (!name || !id || !cls || !gender) {
+        alert("Please fill in all fields.");
+        return;
+      }
+
+      if (students.some(s => s.studentId === id)) {
+        alert("Student ID already exists.");
+        return;
+      }
+
+      students.push({ studentId: id, name, class: cls, gender });
+      saveData();
+      renderTable();
+
+      document.getElementById("name").value = "";
+      document.getElementById("id").value = "";
+      document.getElementById("class").value = "";
+      document.getElementById("gender").value = "";
+    }
+
+    function deleteStudent(index) {
+      if (confirm("Remove this student?")) {
+        students.splice(index, 1);
+        saveData();
+        renderTable();
+      }
+    }
+
+    function renderTable() {
+      const body = document.getElementById("table-body");
+      body.innerHTML = "";
+      students.forEach((s, i) => {
+        const row = document.createElement("tr");
+        row.innerHTML = `
+          <td>${s.studentId}</td>
+          <td>${s.name}</td>
+          <td>${s.class}</td>
+          <td>${s.gender}</td>
+          <td><button onclick="deleteStudent(${i})">🗑 Remove</button></td>
+        `;
+        body.appendChild(row);
+      });
+    }
+
+    function downloadCSV() {
+      if (students.length === 0) {
+        alert("No student data to export.");
+        return;
+      }
+
+      let csv = "Student ID,Name,Class,Gender\n";
+      students.forEach(s => {
+        csv += `${s.studentId},${s.name},${s.class},${s.gender}\n`;
+      });
+
+      const blob = new Blob([csv], { type: "text/csv" });
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement("a");
+      a.href = url;
+      a.download = "students.csv";
+      a.click();
+      URL.revokeObjectURL(url);
+    }
+
+    function uploadCSV() {
+      const fileInput = document.getElementById("csvFile");
+      const file = fileInput.files[0];
+
+      if (!file) return;
+
+      const reader = new FileReader();
+      reader.onload = function (e) {
+        const lines = e.target.result.split("\n").slice(1); // Skip header
+        lines.forEach(line => {
+          const [id, name, cls, gender] = line.split(",").map(x => x.trim());
+          if (!id || !name || !cls || !gender) return;
+
+          if (!students.some(s => s.studentId === id)) {
+            students.push({ studentId: id, name, class: cls, gender });
+          }
+        });
+
+        saveData();
+        renderTable();
+        alert("CSV import complete.");
+        fileInput.value = "";
+      };
+
+      reader.readAsText(file);
+    }
+
+    renderTable();
+  </script>
+</body>
+</html>

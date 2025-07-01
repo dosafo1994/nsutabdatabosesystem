@@ -1,0 +1,111 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <title>Headteacher Login | Nsuta Portal</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <link rel="stylesheet" href="style.css" />
+  <script src="router.js"></script>
+  <style>
+    body {
+      font-family: Arial, sans-serif;
+      background: #f4f9ff;
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      height: 100vh;
+    }
+
+    .box {
+      background: white;
+      padding: 30px;
+      border-radius: 10px;
+      box-shadow: 0 0 10px rgba(0,0,0,0.1);
+      width: 320px;
+    }
+
+    h2 {
+      text-align: center;
+      margin-bottom: 20px;
+    }
+
+    input, button {
+      width: 100%;
+      padding: 12px;
+      font-size: 16px;
+      margin-bottom: 16px;
+    }
+
+    button {
+      background: #0077cc;
+      color: white;
+      border: none;
+      cursor: pointer;
+      border-radius: 4px;
+    }
+
+    button:hover {
+      background: #005fa3;
+    }
+
+    .footer-link {
+      text-align: center;
+      font-size: 14px;
+    }
+
+    .footer-link a {
+      color: #0077cc;
+      text-decoration: none;
+    }
+
+    .footer-link a:hover {
+      text-decoration: underline;
+    }
+  </style>
+</head>
+<body>
+  <div class="box">
+    <h2>🧑‍💼 Headteacher Login</h2>
+    <input type="text" id="phone" placeholder="Phone Number (e.g. 0200000000)" />
+    <input type="password" id="pin" placeholder="4-digit PIN" maxlength="4" />
+    <button onclick="login()">Login</button>
+    <div class="footer-link">
+      <a href="portal.html">← Back to Portal</a>
+    </div>
+  </div>
+
+  <script>
+    function login() {
+      const phone = document.getElementById("phone").value.trim();
+      const pin = document.getElementById("pin").value.trim();
+
+      if (!phone || !pin) {
+        alert("Please fill in both fields.");
+        return;
+      }
+
+      const users = JSON.parse(localStorage.getItem("userAccounts")) || [];
+      const user = users.find(
+        u => u.phone === phone && u.pin === pin && u.role === "headteacher"
+      );
+
+      if (!user) {
+        alert("Incorrect credentials.");
+        return;
+      }
+
+      sessionStorage.setItem("username", user.phone);
+      sessionStorage.setItem("role", user.role);
+      sessionStorage.setItem("displayName", user.name || "Headteacher");
+
+      localStorage.setItem("activeUser", JSON.stringify({
+        username: user.phone,
+        role: user.role,
+        displayName: user.name || "Headteacher"
+      }));
+
+      window.location.href = "dashboard.html"; // Redirect to dashboard
+    }
+  </script>
+</body>
+</html>
