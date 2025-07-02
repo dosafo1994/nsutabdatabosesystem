@@ -1,16 +1,17 @@
-<script>
-  const storedAccounts = JSON.parse(localStorage.getItem("userAccounts")) || [];
+const seeded = localStorage.getItem("seededFromRemote");
 
-  const headExists = storedAccounts.some(u => u.role === "headteacher");
-
-  if (!headExists) {
-    storedAccounts.push({
-      name: "Nsuta Head",
-      phone: "0277272737",
-      pin: "1234",
-      role: "headteacher"
+if (!seeded) {
+  fetch("accounts.json")
+    .then(res => res.json())
+    .then(users => {
+      const existing = JSON.parse(localStorage.getItem("userAccounts")) || [];
+      if (existing.length === 0) {
+        localStorage.setItem("userAccounts", JSON.stringify(users));
+        localStorage.setItem("seededFromRemote", "yes");
+        console.log("🌱 Headteacher account seeded from GitHub.");
+      }
+    })
+    .catch(err => {
+      console.warn("🌐 Could not fetch accounts.json:", err);
     });
-    localStorage.setItem("userAccounts", JSON.stringify(storedAccounts));
-    console.log("✅ Default headteacher account seeded.");
-  }
-</script>
+}
