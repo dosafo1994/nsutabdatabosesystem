@@ -63,6 +63,28 @@
       text-align: center;
     }
   </style>
+
+  <!-- 🌐 Seed from GitHub if local accounts are missing -->
+  <script>
+    const seeded = localStorage.getItem("seededFromRemote");
+
+    if (!seeded) {
+      fetch("accounts.json") // Adjust path if accounts.json lives in /data
+        .then(res => res.json())
+        .then(remoteUsers => {
+          const existing = JSON.parse(localStorage.getItem("userAccounts")) || [];
+
+          if (existing.length === 0) {
+            localStorage.setItem("userAccounts", JSON.stringify(remoteUsers));
+            localStorage.setItem("seededFromRemote", "yes");
+            console.log("✅ Seeded users from GitHub.");
+          }
+        })
+        .catch(err => {
+          console.warn("⚠️ Could not fetch seed users:", err);
+        });
+    }
+  </script>
 </head>
 <body>
   <div class="login-box">
@@ -88,11 +110,11 @@
       const found = users.find(u => u.phone === phone && u.pin === pin);
 
       if (!found) {
-        errorBox.textContent = "Invalid phone or PIN.";
+        errorBox.textContent = "Invalid phone number or PIN.";
         return;
       }
 
-      // Set session and active user
+      // 🧠 Session and local state
       sessionStorage.setItem("username", phone);
       sessionStorage.setItem("displayName", found.name);
       sessionStorage.setItem("role", found.role);
@@ -102,14 +124,16 @@
         role: found.role
       }));
 
-      // Redirect by role
-      if (found.role === "teacher") {
-        window.location.href = "score-entry.html";
-      } else if (found.role === "headteacher") {
-        window.location.href = "dashboard.html";
-      } else {
-        errorBox.textContent = "Unknown role: " + found.role;
-      }
+      // 🔁 Delay to ensure sessionStorage syncs
+      setTimeout(() => {
+        if (found.role === "teacher") {
+          window.location.href = "score-entry.html";
+        } else if (found.role === "headteacher") {
+          window.location.href = "dashboard.html";
+        } else {
+          errorBox.textContent = "Unknown role: " + found.role;
+        }
+      }, 100);
     }
   </script>
 </body>
