@@ -7,24 +7,60 @@
   <style>
     body {
       font-family: Arial, sans-serif;
-      padding: 20px;
       background: #f4f9ff;
+      padding: 20px;
       max-width: 900px;
       margin: auto;
     }
 
-    h2 {
-      color: #0077cc;
-      margin-bottom: 20px;
+    .dashboard-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      background: #e7f0fc;
+      padding: 20px;
+      border-radius: 8px;
+      margin-bottom: 25px;
     }
 
-    label, select, input[type="number"] {
+    .dashboard-header h1 {
+      margin: 0;
+      font-size: 22px;
+      color: #333;
+    }
+
+    .dashboard-meta {
+      display: flex;
+      align-items: center;
+      gap: 20px;
+    }
+
+    .logout-btn {
+      background: #c0392b;
+      color: white;
+      border: none;
+      padding: 8px 14px;
+      border-radius: 5px;
+      cursor: pointer;
+      font-size: 14px;
+    }
+
+    .logout-btn:hover {
+      background: #992d22;
+    }
+
+    h2 {
+      color: #0077cc;
+      margin-bottom: 15px;
+    }
+
+    label, select, input {
       font-size: 15px;
       margin: 8px 5px 8px 0;
       padding: 6px;
     }
 
-    select, input {
+    select, input[type="text"], input[type="number"] {
       width: 200px;
     }
 
@@ -36,6 +72,8 @@
       border-radius: 5px;
       font-size: 15px;
       cursor: pointer;
+      margin-top: 10px;
+      margin-right: 10px;
     }
 
     button:hover {
@@ -45,7 +83,7 @@
     table {
       width: 100%;
       border-collapse: collapse;
-      margin-top: 30px;
+      margin-top: 25px;
     }
 
     th, td {
@@ -55,7 +93,7 @@
     }
 
     th {
-      background: #e0ecf9;
+      background-color: #e0ecf9;
     }
 
     #status {
@@ -66,21 +104,32 @@
   </style>
 </head>
 <body>
-  <h2>📘 Teacher Score Entry</h2>
+  <!-- 👨‍🏫 Dashboard Header -->
+  <header class="dashboard-header">
+    <h1>👨‍🏫 Welcome, <strong id="teacherName">...</strong></h1>
+    <div class="dashboard-meta">
+      <span id="termInfo">Academic Year: 2025 · Term 2</span>
+      <button onclick="logout()" class="logout-btn">Logout</button>
+    </div>
+  </header>
 
-  <!-- Filter Controls -->
+  <h2>📘 Score Entry Panel</h2>
+
+  <!-- Controls -->
   <label for="classSelect">Class:</label>
   <select id="classSelect">
     <option value="">-- Select Class --</option>
   </select>
 
   <label for="subjectInput">Subject:</label>
-  <input type="text" id="subjectInput" placeholder="e.g. Math" />
+  <input type="text" id="subjectInput" placeholder="e.g. Science" />
 
   <button onclick="loadStudents()">Load Students</button>
+  <button onclick="loadSavedScores()">Load Saved Scores</button>
 
-  <!-- Score Sheet -->
   <div id="status"></div>
+
+  <!-- Score Table -->
   <form id="scoreForm" onsubmit="saveScores(event)">
     <table id="scoreTable" style="display:none;">
       <thead>
@@ -90,17 +139,26 @@
       </thead>
       <tbody></tbody>
     </table>
-    <button type="submit" style="margin-top:15px;">💾 Save Scores</button>
+    <button type="submit">💾 Save Scores</button>
   </form>
 
   <script>
+    document.getElementById("teacherName").textContent =
+      sessionStorage.getItem("displayName") || "Teacher";
+    document.getElementById("termInfo").textContent = "Academic Year: 2025 · Term 2";
+
+    function logout() {
+      sessionStorage.clear();
+      localStorage.removeItem("activeUser");
+      window.location.href = "index.html";
+    }
+
     function populateClassDropdown() {
       const students = JSON.parse(localStorage.getItem("studentList")) || [];
-      const classes = [...new Set(students.map(s => s.class))];
-
+      const classSet = new Set(students.map(s => s.class));
       const classSelect = document.getElementById("classSelect");
       classSelect.innerHTML = '<option value="">-- Select Class --</option>';
-      classes.forEach(cls => {
+      classSet.forEach(cls => {
         const opt = document.createElement("option");
         opt.value = cls;
         opt.textContent = cls;
@@ -175,6 +233,63 @@
       localStorage.setItem("scoreList", JSON.stringify([...updatedScores, ...scores]));
 
       document.getElementById("status").textContent = `✅ Saved ${scores.length} scores for ${subject} (${selectedClass})`;
+    }
+
+    function loadSavedScores() {
+      const selectedClass = document.getElementById("classSelect").value;
+      const subject = document.getElementById("subjectInput").value.trim();
+      const table = document.getElementById("scoreTable");
+      const tbody = table.querySelector("tbody");
+      const status = document.getElementById("status");
+
+      status.textContent = "";
+      tbody.innerHTML = "";
+
+      if (!selectedClass || !subject) {
+        alert("Please select both class and subject.");
+        return;
+      }
+
+      const allScores = JSON.parse(localStorage.getItem("scoreList")) || [];
+      const filtered = allScores.filter(s => s.class === selectedClass && s.subject === subject);
+
+      if (filtered.length === 0) {
+        status.textContent = "⚠️ No scores found for this class and subject.";
+        table.style.display = "none";
+        return;
+      }
+
+      let total = 0;
+      filtered.forEach((s, index) => {
+        total += s.score;
+        const row = document.createElement("tr");
+        row.innerHTML = `
+          <td>${s.student_id}</td>
+          <td>${s.full_name}</td>
+          <td>${s.class}</td>
+          <td><input type="number" min="0" max="100" value="${s.score}" onchange="updateScore(${index}, this.value)" /></td>
+        `;
+        tbody.appendChild(row);
+      });
+
+            const avg = Math.round(total / filtered.length);
+      status.textContent = `✅ Loaded ${filtered.length} scores · Average: ${avg}`;
+      table.style.display = "table";
+    }
+
+    function updateScore(index, newValue) {
+      const selectedClass = document.getElementById("classSelect").value;
+      const subject = document.getElementById("subjectInput").value.trim();
+      const allScores = JSON.parse(localStorage.getItem("scoreList")) || [];
+
+      const filtered = allScores.filter(s => s.class === selectedClass && s.subject === subject);
+
+      if (filtered[index]) {
+        filtered[index].score = parseInt(newValue);
+      }
+
+      const others = allScores.filter(s => !(s.class === selectedClass && s.subject === subject));
+      localStorage.setItem("scoreList", JSON.stringify([...others, ...filtered]));
     }
 
     window.onload = populateClassDropdown;
