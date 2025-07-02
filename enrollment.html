@@ -2,234 +2,237 @@
 <html lang="en">
 <head>
   <meta charset="UTF-8" />
-  <title>Student Enrollment | Nkawkaw Nsuta B</title>
+  <title>Enroll Students</title>
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <link rel="stylesheet" href="style.css" />
-  <script src="router.js"></script>
-
-  <!-- ✅ Restore session -->
-  <script>
-    const activeUser = JSON.parse(localStorage.getItem("activeUser"));
-    if (
-      !sessionStorage.getItem("role") &&
-      activeUser?.role === "headteacher"
-    ) {
-      sessionStorage.setItem("username", activeUser.username);
-      sessionStorage.setItem("displayName", activeUser.displayName);
-      sessionStorage.setItem("role", activeUser.role);
-    }
-  </script>
-  <script src="guard.js"></script>
-
   <style>
     body {
       font-family: Arial, sans-serif;
-      padding: 40px;
-      max-width: 800px;
-      margin: auto;
       background: #f4f9ff;
+      padding: 20px;
+      max-width: 900px;
+      margin: auto;
     }
 
-    h2 {
-      text-align: center;
-      margin-bottom: 30px;
-    }
-
-    label {
-      font-weight: bold;
-      margin-top: 20px;
-      display: block;
+    h2, h3 {
+      color: #0077cc;
+      margin-bottom: 15px;
     }
 
     input, select {
-      width: 100%;
-      padding: 10px;
-      font-size: 16px;
-      margin-top: 5px;
+      padding: 8px;
+      margin: 5px;
+      font-size: 14px;
     }
 
     button {
-      padding: 10px 20px;
-      margin-top: 20px;
+      padding: 8px 14px;
+      font-size: 14px;
+      border: none;
+      border-radius: 4px;
       background: #0077cc;
       color: white;
-      border: none;
-      font-size: 16px;
-      border-radius: 4px;
       cursor: pointer;
+      margin-top: 10px;
     }
 
     button:hover {
       background: #005fa3;
     }
 
-    .student-table {
-      margin-top: 40px;
-      width: 100%;
-      border-collapse: collapse;
+    #confirmBtn {
+      background: #28a745;
     }
 
-    .student-table th, .student-table td {
+    #confirmBtn:hover {
+      background: #218838;
+    }
+
+    table {
+      width: 100%;
+      border-collapse: collapse;
+      margin-top: 20px;
+    }
+
+    th, td {
       border: 1px solid #ccc;
       padding: 8px;
       text-align: left;
     }
 
-    .student-table th {
-      background: #f4f4f4;
+    th {
+      background-color: #e0ecf9;
     }
 
-    .file-input {
+    .action-btn {
+      background: crimson;
+      padding: 4px 10px;
+      font-size: 13px;
+      margin-left: 5px;
+    }
+
+    .action-btn:hover {
+      background: #a30000;
+    }
+
+    #uploadStatus {
       margin-top: 10px;
+      font-weight: bold;
+      color: green;
     }
   </style>
 </head>
 <body>
-  <h2>📋 Student Enrollment</h2>
+  <h2>📘 Student Enrollment</h2>
 
-  <label for="name">Full Name</label>
-  <input type="text" id="name" />
+  <!-- CSV Upload Section -->
+  <h3>📂 Upload Students from CSV</h3>
+  <input type="file" id="csvFile" accept=".csv" />
+  <button onclick="previewCSV()">Preview CSV</button>
+  <div id="csvPreview"></div>
+  <button id="confirmBtn" style="display:none;" onclick="confirmUpload()">✅ Confirm Upload</button>
+  <div id="uploadStatus"></div>
 
-  <label for="id">Student ID</label>
-  <input type="text" id="id" />
-
-  <label for="class">Class</label>
-  <select id="class">
-    <option value="">-- Select Class --</option>
-    <option value="JHS 1">JHS 1</option>
-    <option value="JHS 2">JHS 2</option>
-    <option value="JHS 3">JHS 3</option>
-  </select>
-
-  <label for="gender">Gender</label>
-  <select id="gender">
-    <option value="">-- Select Gender --</option>
+  <!-- Manual Entry Form -->
+  <h3>➕ Add New Student</h3>
+  <input type="text" id="idInput" placeholder="Student ID" />
+  <input type="text" id="nameInput" placeholder="Full Name" />
+  <input type="text" id="classInput" placeholder="Class" />
+  <select id="genderInput">
+    <option value="">Select Gender</option>
     <option value="Male">Male</option>
     <option value="Female">Female</option>
   </select>
+  <button onclick="addStudent()">Add</button>
 
-  <button onclick="addStudent()">+ Add Student</button>
-  <button onclick="downloadCSV()">📥 Download CSV</button>
-  <input type="file" id="csvFile" class="file-input" accept=".csv" onchange="uploadCSV()" />
-
-  <table class="student-table">
+  <!-- Student Table -->
+  <h3 style="margin-top:30px;">🧾 All Enrolled Students</h3>
+  <table id="studentTable">
     <thead>
       <tr>
-        <th>ID</th>
-        <th>Name</th>
-        <th>Class</th>
-        <th>Gender</th>
-        <th>Remove</th>
+        <th>ID</th><th>Name</th><th>Class</th><th>Gender</th><th>Actions</th>
       </tr>
     </thead>
-    <tbody id="table-body"></tbody>
+    <tbody></tbody>
   </table>
 
   <script>
-    let students = JSON.parse(localStorage.getItem("studentDatabase")) || [];
+    let previewData = [];
 
-    function saveData() {
-      localStorage.setItem("studentDatabase", JSON.stringify(students));
-    }
-
-    function addStudent() {
-      const name = document.getElementById("name").value.trim();
-      const id = document.getElementById("id").value.trim();
-      const cls = document.getElementById("class").value;
-      const gender = document.getElementById("gender").value;
-
-      if (!name || !id || !cls || !gender) {
-        alert("Please fill in all fields.");
-        return;
-      }
-
-      if (students.some(s => s.studentId === id)) {
-        alert("Student ID already exists.");
-        return;
-      }
-
-      students.push({ studentId: id, name, class: cls, gender });
-      saveData();
-      renderTable();
-
-      document.getElementById("name").value = "";
-      document.getElementById("id").value = "";
-      document.getElementById("class").value = "";
-      document.getElementById("gender").value = "";
-    }
-
-    function deleteStudent(index) {
-      if (confirm("Remove this student?")) {
-        students.splice(index, 1);
-        saveData();
-        renderTable();
-      }
-    }
-
-    function renderTable() {
-      const body = document.getElementById("table-body");
-      body.innerHTML = "";
-      students.forEach((s, i) => {
-        const row = document.createElement("tr");
-        row.innerHTML = `
-          <td>${s.studentId}</td>
-          <td>${s.name}</td>
-          <td>${s.class}</td>
-          <td>${s.gender}</td>
-          <td><button onclick="deleteStudent(${i})">🗑 Remove</button></td>
-        `;
-        body.appendChild(row);
-      });
-    }
-
-    function downloadCSV() {
-      if (students.length === 0) {
-        alert("No student data to export.");
-        return;
-      }
-
-      let csv = "Student ID,Name,Class,Gender\n";
-      students.forEach(s => {
-        csv += `${s.studentId},${s.name},${s.class},${s.gender}\n`;
-      });
-
-      const blob = new Blob([csv], { type: "text/csv" });
-      const url = URL.createObjectURL(blob);
-      const a = document.createElement("a");
-      a.href = url;
-      a.download = "students.csv";
-      a.click();
-      URL.revokeObjectURL(url);
-    }
-
-    function uploadCSV() {
+    function previewCSV() {
       const fileInput = document.getElementById("csvFile");
       const file = fileInput.files[0];
+      const preview = document.getElementById("csvPreview");
+      const confirmBtn = document.getElementById("confirmBtn");
+      const uploadStatus = document.getElementById("uploadStatus");
 
-      if (!file) return;
+      preview.innerHTML = "";
+      uploadStatus.textContent = "";
+      previewData = [];
+
+      if (!file) {
+        alert("Please select a CSV file.");
+        return;
+      }
 
       const reader = new FileReader();
       reader.onload = function (e) {
-        const lines = e.target.result.split("\n").slice(1); // Skip header
-        lines.forEach(line => {
-          const [id, name, cls, gender] = line.split(",").map(x => x.trim());
-          if (!id || !name || !cls || !gender) return;
+        const lines = e.target.result.trim().split("\n");
+        let html = "<table><tr><th>ID</th><th>Name</th><th>Class</th><th>Gender</th></tr>";
 
-          if (!students.some(s => s.studentId === id)) {
-            students.push({ studentId: id, name, class: cls, gender });
+        for (let i = 1; i < lines.length; i++) {
+          const [id, name, cls, gender] = lines[i].split(",");
+          if (id && name && cls && gender) {
+            const student = {
+              student_id: id.trim(),
+              full_name: name.trim(),
+              class: cls.trim(),
+              gender: gender.trim()
+            };
+            previewData.push(student);
+            html += `<tr><td>${student.student_id}</td><td>${student.full_name}</td><td>${student.class}</td><td>${student.gender}</td></tr>`;
           }
-        });
+        }
 
-        saveData();
-        renderTable();
-        alert("CSV import complete.");
-        fileInput.value = "";
+        html += "</table>";
+        preview.innerHTML = html;
+        confirmBtn.style.display = "inline-block";
       };
 
       reader.readAsText(file);
     }
 
-    renderTable();
+    function confirmUpload() {
+      if (previewData.length === 0) return;
+      const existing = JSON.parse(localStorage.getItem("studentList")) || [];
+      const updated = [...existing, ...previewData];
+      localStorage.setItem("studentList", JSON.stringify(updated));
+      document.getElementById("uploadStatus").textContent = `✅ ${previewData.length} students added successfully.`;
+      document.getElementById("csvFile").value = "";
+      document.getElementById("csvPreview").innerHTML = "";
+      document.getElementById("confirmBtn").style.display = "none";
+      loadStudents();
+    }
+
+    function addStudent() {
+      const id = document.getElementById("idInput").value.trim();
+      const name = document.getElementById("nameInput").value.trim();
+      const cls = document.getElementById("classInput").value.trim();
+      const gender = document.getElementById("genderInput").value;
+
+      if (!id || !name || !cls || !gender) {
+        alert("Please fill all fields.");
+        return;
+      }
+
+      const students = JSON.parse(localStorage.getItem("studentList")) || [];
+      students.push({ student_id: id, full_name: name, class: cls, gender });
+      localStorage.setItem("studentList", JSON.stringify(students));
+      loadStudents();
+
+      document.getElementById("idInput").value = "";
+      document.getElementById("nameInput").value = "";
+      document.getElementById("classInput").value = "";
+      document.getElementById("genderInput").value = "";
+    }
+
+    function loadStudents() {
+      const students = JSON.parse(localStorage.getItem("studentList")) || [];
+      const tbody = document.querySelector("#studentTable tbody");
+      tbody.innerHTML = "";
+
+      students.forEach((s, index) => {
+        const row = document.createElement("tr");
+
+        row.innerHTML = `
+          <td><input value="${s.student_id}" onchange="editStudent(${index}, 'student_id', this.value)" /></td>
+          <td><input value="${s.full_name}" onchange="editStudent(${index}, 'full_name', this.value)" /></td>
+          <td><input value="${s.class}" onchange="editStudent(${index}, 'class', this.value)" /></td>
+          <td>
+            <select onchange="editStudent(${index}, 'gender', this.value)">
+              <option ${s.gender==="Male"?"selected":""}>Male</option>
+              <option ${s.gender==="Female"?"selected":""}>Female</option>
+            </select>
+          </td>
+          <td><button class="action-btn" onclick="removeStudent(${index})">Remove</button></td>
+        `;
+        tbody.appendChild(row);
+      });
+    }
+
+    function editStudent(index, key, value) {
+      const students = JSON.parse(localStorage.getItem("studentList")) || [];
+      students[index][key] = value;
+      localStorage.setItem("studentList", JSON.stringify(students));
+    }
+
+    function removeStudent(index) {
+      const students = JSON.parse(localStorage.getItem("studentList")) || [];
+      students.splice(index, 1);
+      localStorage.setItem("studentList", JSON.stringify(students));
+      loadStudents();
+    }
+
+    window.onload = loadStudents;
   </script>
 </body>
 </html>
