@@ -101,6 +101,7 @@
     <option>Male</option>
     <option>Female</option>
   </select>
+  <input type="password" id="pinInput" maxlength="4" placeholder="4-digit PIN" />
   <input type="text" id="photoInput" placeholder="Photo URL (optional)" />
   <div id="photoPreview">
     <img src="assets/default-photo.png" id="previewImg" alt="Preview" />
@@ -114,7 +115,7 @@
   <table id="studentTable">
     <thead>
       <tr>
-        <th>ID</th><th>Name</th><th>Class</th><th>Gender</th><th>Actions</th>
+        <th>ID</th><th>Name</th><th>Class</th><th>Gender</th><th>PIN</th><th>Actions</th>
       </tr>
     </thead>
     <tbody></tbody>
@@ -138,17 +139,16 @@
       const reader = new FileReader();
       reader.onload = function (e) {
         const lines = e.target.result.trim().split("\n");
-        const hasHeader = lines[0].toLowerCase().includes("id") || lines[0].toLowerCase().includes("name");
+        const hasHeader = lines[0].toLowerCase().includes("id");
         const startIndex = hasHeader ? 1 : 0;
-
-        let html = "<table><tr><th>ID</th><th>Name</th><th>Class</th><th>Gender</th></tr>";
+        let html = "<table><tr><th>ID</th><th>Name</th><th>Class</th><th>Gender</th><th>PIN</th></tr>";
 
         for (let i = startIndex; i < lines.length; i++) {
-          const [id, name, cls, gender] = lines[i].split(",").map(p => p?.trim());
-          if (id && name && cls && gender) {
-            const student = { student_id: id, full_name: name, class: cls, gender };
+          const [id, name, cls, gender, pin] = lines[i].split(",").map(p => p?.trim());
+          if (id && name && cls && gender && /^\d{4}$/.test(pin)) {
+            const student = { student_id: id, full_name: name, class: cls, gender, pin };
             previewData.push(student);
-            html += `<tr><td>${id}</td><td>${name}</td><td>${cls}</td><td>${gender}</td></tr>`;
+            html += `<tr><td>${id}</td><td>${name}</td><td>${cls}</td><td>${gender}</td><td>${pin}</td></tr>`;
           }
         }
 
@@ -164,7 +164,6 @@
     function confirmUpload() {
       if (previewData.length === 0) return;
       let existing = JSON.parse(localStorage.getItem("studentList")) || [];
-
       previewData = previewData.filter(p => !existing.some(e => e.student_id === p.student_id));
       const updated = [...existing, ...previewData];
 
@@ -181,11 +180,12 @@
       const name = document.getElementById("nameInput").value.trim();
       const cls = document.getElementById("classInput").value;
       const gender = document.getElementById("genderInput").value;
+      const pin = document.getElementById("pinInput").value.trim();
       const photo = document.getElementById("photoInput").value.trim();
       const feedback = document.getElementById("feedback");
 
-      if (!id || !name || !cls || !gender) {
-        feedback.textContent = "⚠️ Fill in all fields.";
+      if (!id || !name || !cls || !gender || !/^\d{4}$/.test(pin)) {
+        feedback.textContent = "⚠️ Fill in all fields correctly. PIN must be 4 digits.";
         feedback.style.color = "crimson";
         return;
       }
@@ -202,6 +202,7 @@
         full_name: name,
         class: cls,
         gender,
+        pin,
         photo: photo || "assets/default-photo.png"
       });
 
@@ -212,6 +213,7 @@
       document.getElementById("nameInput").value = "";
       document.getElementById("classInput").value = "";
       document.getElementById("genderInput").value = "";
+      document.getElementById("pinInput").      document.getElementById("pinInput").value = "";
       document.getElementById("photoInput").value = "";
       document.getElementById("previewImg").src = "assets/default-photo.png";
       feedback.textContent = "✅ Student added successfully.";
@@ -246,9 +248,8 @@
               <option ${s.gender === "Female" ? "selected" : ""}>Female</option>
             </select>
           </td>
-          <td>
-            <button class="action-btn" onclick="removeStudent(${index})">Remove</button>
-          </td>
+          <td><input value="${s.pin || ''}" onchange="editStudent(${index}, 'pin', this.value)" /></td>
+          <td><button class="action-btn" onclick="removeStudent(${index})">Remove</button></td>
         `;
         tbody.appendChild(row);
       });
@@ -271,9 +272,9 @@
       const students = JSON.parse(localStorage.getItem("studentList")) || [];
       if (students.length === 0) return alert("No student data available.");
 
-      let csvContent = "ID,Name,Class,Gender\n";
+      let csvContent = "ID,Name,Class,Gender,PIN\n";
       students.forEach(s => {
-        csvContent += `${s.student_id},${s.full_name},${s.class},${s.gender}\n`;
+        csvContent += `${s.student_id},${s.full_name},${s.class},${s.gender},${s.pin || ""}\n`;
       });
 
       const blob = new Blob([csvContent], { type: "text/csv;charset=utf-8;" });
