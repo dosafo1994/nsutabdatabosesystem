@@ -2,51 +2,15 @@
 <html lang="en">
 <head>
   <meta charset="UTF-8" />
-  <title>Teacher Score Entry</title>
+  <title>Exam Score Entry</title>
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <style>
     body {
-      font-family: Arial, sans-serif;
+      font-family: Arial;
       background: #f4f9ff;
       padding: 20px;
       max-width: 900px;
       margin: auto;
-    }
-
-    .dashboard-header {
-      display: flex;
-      justify-content: space-between;
-      align-items: center;
-      background: #e7f0fc;
-      padding: 20px;
-      border-radius: 8px;
-      margin-bottom: 25px;
-    }
-
-    .dashboard-header h1 {
-      margin: 0;
-      font-size: 22px;
-      color: #333;
-    }
-
-    .dashboard-meta {
-      display: flex;
-      align-items: center;
-      gap: 20px;
-    }
-
-    .logout-btn {
-      background: #c0392b;
-      color: white;
-      border: none;
-      padding: 8px 14px;
-      border-radius: 5px;
-      cursor: pointer;
-      font-size: 14px;
-    }
-
-    .logout-btn:hover {
-      background: #992d22;
     }
 
     h2 {
@@ -54,245 +18,212 @@
       margin-bottom: 15px;
     }
 
-    label, select, input {
+    label, select {
       font-size: 15px;
       margin: 8px 5px 8px 0;
       padding: 6px;
     }
 
-    select, input[type="text"], input[type="number"] {
+    select {
       width: 200px;
-    }
-
-    button {
-      padding: 8px 14px;
-      background: #0077cc;
-      color: white;
-      border: none;
-      border-radius: 5px;
-      font-size: 15px;
-      cursor: pointer;
-      margin-top: 10px;
-      margin-right: 10px;
-    }
-
-    button:hover {
-      background: #005fa3;
     }
 
     table {
       width: 100%;
       border-collapse: collapse;
-      margin-top: 25px;
+      margin-top: 20px;
     }
 
     th, td {
       border: 1px solid #ccc;
       padding: 10px;
-      text-align: left;
     }
 
     th {
       background-color: #e0ecf9;
     }
 
+    input[type="number"] {
+      width: 80px;
+      padding: 4px;
+    }
+
+    button {
+      margin-top: 10px;
+      padding: 8px 14px;
+      background: #0077cc;
+      color: white;
+      border: none;
+      border-radius: 5px;
+    }
+
+    button:hover {
+      background: #005fa3;
+    }
+
     #status {
       margin-top: 15px;
       font-weight: bold;
-      color: green;
+    }
+
+    .invalid-mark {
+      background-color: #ffe7e7;
+      border: 2px solid crimson;
     }
   </style>
 </head>
 <body>
-  <!-- 👨‍🏫 Dashboard Header -->
-  <header class="dashboard-header">
-    <h1>👨‍🏫 Welcome, <strong id="teacherName">...</strong></h1>
-    <div class="dashboard-meta">
-      <span id="termInfo">Academic Year: 2025 · Term 2</span>
-      <button onclick="logout()" class="logout-btn">Logout</button>
-    </div>
-  </header>
+  <h2>📘 Exam Score Entry (Raw out of 100)</h2>
 
-  <h2>📘 Score Entry Panel</h2>
+  <label>Class:</label>
+  <select id="classSelect"><option value="">--Select Class--</option></select>
 
-  <!-- Controls -->
-  <label for="classSelect">Class:</label>
-  <select id="classSelect">
-    <option value="">-- Select Class --</option>
-  </select>
-
-  <label for="subjectInput">Subject:</label>
-  <input type="text" id="subjectInput" placeholder="e.g. Science" />
+  <label>Subject:</label>
+  <select id="subjectSelect"><option value="">--Select Subject--</option></select>
 
   <button onclick="loadStudents()">Load Students</button>
-  <button onclick="loadSavedScores()">Load Saved Scores</button>
+  <button onclick="loadSaved()">Load Saved Scores</button>
 
   <div id="status"></div>
 
-  <!-- Score Table -->
-  <form id="scoreForm" onsubmit="saveScores(event)">
-    <table id="scoreTable" style="display:none;">
-      <thead>
-        <tr>
-          <th>ID</th><th>Name</th><th>Class</th><th>Score</th>
-        </tr>
-      </thead>
+  <form onsubmit="saveScores(event)">
+    <table id="examTable" style="display:none;">
+      <thead><tr><th>ID</th><th>Name</th><th>Score (Raw)</th></tr></thead>
       <tbody></tbody>
     </table>
-    <button type="submit">💾 Save Scores</button>
+    <button type="submit">💾 Save Exam Scores</button>
   </form>
 
   <script>
-    document.getElementById("teacherName").textContent =
-      sessionStorage.getItem("displayName") || "Teacher";
-    document.getElementById("termInfo").textContent = "Academic Year: 2025 · Term 2";
+    const user = JSON.parse(localStorage.getItem("activeUser")) || {};
+    const classes = user.classes || [];
+    const subjects = user.subjects || [];
 
-    function logout() {
-      sessionStorage.clear();
-      localStorage.removeItem("activeUser");
-      window.location.href = "index.html";
-    }
+    const classSelect = document.getElementById("classSelect");
+    const subjectSelect = document.getElementById("subjectSelect");
+    const status = document.getElementById("status");
 
-    function populateClassDropdown() {
-      const students = JSON.parse(localStorage.getItem("studentList")) || [];
-      const classSet = new Set(students.map(s => s.class));
-      const classSelect = document.getElementById("classSelect");
-      classSelect.innerHTML = '<option value="">-- Select Class --</option>';
-      classSet.forEach(cls => {
-        const opt = document.createElement("option");
-        opt.value = cls;
-        opt.textContent = cls;
-        classSelect.appendChild(opt);
-      });
-    }
+    classes.forEach(cls => classSelect.innerHTML += `<option>${cls}</option>`);
+    subjects.forEach(sub => subjectSelect.innerHTML += `<option>${sub}</option>`);
 
     function loadStudents() {
-      const selectedClass = document.getElementById("classSelect").value;
-      const subject = document.getElementById("subjectInput").value.trim();
-      const table = document.getElementById("scoreTable");
-      const tbody = table.querySelector("tbody");
-      const status = document.getElementById("status");
+      const cls = classSelect.value;
+      const sub = subjectSelect.value;
+      if (!cls || !sub) return alert("Select class and subject");
 
-      status.textContent = "";
-      tbody.innerHTML = "";
-
-      if (!selectedClass || !subject) {
-        alert("Please select a class and enter a subject.");
+      if (!classes.includes(cls) || !subjects.includes(sub)) {
+        status.textContent = `⛔ You are not assigned to ${sub} in ${cls}`;
+        status.style.color = "crimson";
         return;
       }
 
       const students = JSON.parse(localStorage.getItem("studentList")) || [];
-      const filtered = students.filter(s => s.class === selectedClass);
+      const filtered = students.filter(s => s.class === cls);
+      if (filtered.length === 0) return alert("No students in class");
 
-      if (filtered.length === 0) {
-        status.textContent = "⚠️ No students enrolled in selected class.";
-        table.style.display = "none";
-        return;
-      }
-
+      const tbody = document.querySelector("#examTable tbody");
+      tbody.innerHTML = "";
       filtered.forEach(s => {
-        const row = document.createElement("tr");
-        row.innerHTML = `
-          <td>${s.student_id}</td>
-          <td>${s.full_name}</td>
-          <td>${s.class}</td>
-          <td><input type="number" min="0" max="100" data-id="${s.student_id}" /></td>
+        tbody.innerHTML += `
+          <tr>
+            <td>${s.student_id}</td>
+            <td>${s.full_name}</td>
+            <td><input type="number" min="0" max="100" data-id="${s.student_id}" /></td>
+          </tr>
         `;
-        tbody.appendChild(row);
       });
 
-      table.style.display = "table";
+      document.getElementById("examTable").style.display = "table";
+      status.textContent = "";
     }
 
-    function saveScores(event) {
-      event.preventDefault();
+    function validateScores() {
+      let valid = true;
+      const inputs = document.querySelectorAll("#examTable input[type='number']");
+      inputs.forEach(input => {
+        const value = parseFloat(input.value);
+        if (value < 0 || value > 100 || isNaN(value)) {
+          input.classList.add("invalid-mark");
+          valid = false;
+        } else {
+          input.classList.remove("invalid-mark");
+        }
+      });
+      return valid;
+    }
 
-      const subject = document.getElementById("subjectInput").value.trim();
-      const selectedClass = document.getElementById("classSelect").value;
+    function saveScores(e) {
+      e.preventDefault();
+
+      if (!validateScores()) {
+        status.textContent = "❌ Invalid scores detected. Please enter marks between 0–100 only.";
+        status.style.color = "crimson";
+        return;
+      }
+
+      const cls = classSelect.value;
+      const sub = subjectSelect.value;
+
       const inputs = document.querySelectorAll("input[type='number'][data-id]");
       const students = JSON.parse(localStorage.getItem("studentList")) || [];
-      const scores = [];
+      const records = [];
 
       inputs.forEach(input => {
         const id = input.getAttribute("data-id");
-        const scoreValue = parseInt(input.value);
+        const raw = parseFloat(input.value);
         const student = students.find(s => s.student_id === id);
-        if (!student || isNaN(scoreValue)) return;
-
-        scores.push({
-          student_id: student.student_id,
-          full_name: student.full_name,
-          class: student.class,
-          subject,
-          score: scoreValue
-        });
+        records.push({ student_id: id, full_name: student.full_name, class: cls, subject: sub, raw });
       });
 
-      const allScores = JSON.parse(localStorage.getItem("scoreList")) || [];
-      const updatedScores = allScores.filter(s => !(s.class === selectedClass && s.subject === subject));
-      localStorage.setItem("scoreList", JSON.stringify([...updatedScores, ...scores]));
-
-      document.getElementById("status").textContent = `✅ Saved ${scores.length} scores for ${subject} (${selectedClass})`;
+      const key = `exam_${cls}_${sub}`;
+      localStorage.setItem(key, JSON.stringify(records));
+      status.textContent = `✅ Saved Exam scores for ${sub} (${cls})`;
+      status.style.color = "green";
     }
 
-    function loadSavedScores() {
-      const selectedClass = document.getElementById("classSelect").value;
-      const subject = document.getElementById("subjectInput").value.trim();
-      const table = document.getElementById("scoreTable");
-      const tbody = table.querySelector("tbody");
-      const status = document.getElementById("status");
+    function loadSaved() {
+      const cls = classSelect.value;
+      const sub = subjectSelect.value;
+      const key = `exam_${cls}_${sub}`;
+      const saved = JSON.parse(localStorage.getItem(key)) || [];
+      if (saved.length === 0) {
+        status.textContent = "⚠️ No saved scores found.";
+        status.style.color = "darkorange";
+        return;
+      }
 
-      status.textContent = "";
+      const tbody = document.querySelector("#examTable tbody");
       tbody.innerHTML = "";
-
-      if (!selectedClass || !subject) {
-        alert("Please select both class and subject.");
-        return;
-      }
-
-      const allScores = JSON.parse(localStorage.getItem("scoreList")) || [];
-      const filtered = allScores.filter(s => s.class === selectedClass && s.subject === subject);
-
-      if (filtered.length === 0) {
-        status.textContent = "⚠️ No scores found for this class and subject.";
-        table.style.display = "none";
-        return;
-      }
-
-      let total = 0;
-      filtered.forEach((s, index) => {
-        total += s.score;
-        const row = document.createElement("tr");
-        row.innerHTML = `
-          <td>${s.student_id}</td>
-          <td>${s.full_name}</td>
-          <td>${s.class}</td>
-          <td><input type="number" min="0" max="100" value="${s.score}" onchange="updateScore(${index}, this.value)" /></td>
+      saved.forEach((r, index) => {
+        tbody.innerHTML += `
+          <tr>
+            <td>${r.student_id}</td>
+            <td>${r.full_name}</td>
+            <td><input type="number" min="0" max="100" value="${r.raw}" onchange="updateScore(${index}, this.value)" /></td>
+          </tr>
         `;
-        tbody.appendChild(row);
       });
 
-            const avg = Math.round(total / filtered.length);
-      status.textContent = `✅ Loaded ${filtered.length} scores · Average: ${avg}`;
-      table.style.display = "table";
+      document.getElementById("examTable").style.display = "table";
+      status.textContent = `✅ Loaded ${saved.length} scores for editing.`;
+      status.style.color = "green";
     }
 
-    function updateScore(index, newValue) {
-      const selectedClass = document.getElementById("classSelect").value;
-      const subject = document.getElementById("subjectInput").value.trim();
-      const allScores = JSON.parse(localStorage.getItem("scoreList")) || [];
-
-      const filtered = allScores.filter(s => s.class === selectedClass && s.subject === subject);
-
-      if (filtered[index]) {
-        filtered[index].score = parseInt(newValue);
-      }
-
-      const others = allScores.filter(s => !(s.class === selectedClass && s.subject === subject));
-      localStorage.setItem("scoreList", JSON.stringify([...others, ...filtered]));
+    function updateScore(index, newVal) {
+      const cls = classSelect.value;
+      const sub = subjectSelect.value;
+      const key = `exam_${cls}_${sub}`;
+      const saved = JSON.parse(localStorage.getItem(key)) || [];
+      if (saved[index]) saved[index].raw = parseFloat(newVal);
+      localStorage.setItem(key, JSON.stringify(saved));
     }
 
-    window.onload = populateClassDropdown;
+    window.onload = () => {
+      classSelect.value = sessionStorage.getItem("launchClass") || "";
+      subjectSelect.value = sessionStorage.getItem("launchSubject") || "";
+      sessionStorage.removeItem("launchClass");
+      sessionStorage.removeItem("launchSubject");
+    };
   </script>
 </body>
 </html>
