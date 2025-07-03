@@ -1,0 +1,134 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <title>Merged Score Review | Nsuta Portal</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <style>
+    body { font-family: Arial; background: #f2f7ff; padding: 30px; max-width: 1100px; margin: auto; }
+    h1 { color: #0077cc; font-size: 24px; margin-bottom: 10px; }
+    label, select { font-size: 15px; margin: 8px 6px 8px 0; padding: 6px; }
+    select { width: 200px; }
+    table { width: 100%; border-collapse: collapse; margin-top: 20px; }
+    th, td { border: 1px solid #ccc; padding: 10px; text-align: left; font-size: 14px; }
+    th { background-color: #e0ecf9; }
+    button { padding: 10px 16px; background: #0077cc; color: white; border: none; border-radius: 5px; font-size: 14px; cursor: pointer; margin-top: 10px; }
+    button:hover { background: #005fa3; }
+    .alert { color: crimson; font-weight: bold; margin-top: 10px; }
+    .status { color: green; font-weight: bold; margin-top: 10px; }
+  </style>
+  <script>
+  const activeUser = JSON.parse(localStorage.getItem("activeUser"));
+  if (!sessionStorage.getItem("role") && activeUser?.role === "headteacher") {
+    sessionStorage.setItem("username", activeUser.username);
+    sessionStorage.setItem("role", activeUser.role);
+    sessionStorage.setItem("displayName", activeUser.displayName);
+  }
+</script>
+<script src="guard.js"></script>
+</head>
+<body>
+  <h1>📊 Merged Score Review</h1>
+
+  <label>Select Class:</label>
+  <select id="classSelect">
+    <option value="">-- Select Class --</option>
+    <option>JHS1</option>
+    <option>JHS2</option>
+    <option>JHS3</option>
+  </select>
+
+  <label>Select Subject:</label>
+  <select id="subjectSelect">
+    <option value="">-- Select Subject --</option>
+    <option>Math</option>
+    <option>English</option>
+    <option>Science</option>
+    <option>ICT</option>
+    <option>RME</option>
+    <option>Social Studies</option>
+    <option>French</option>
+  </select>
+
+  <button onclick="loadMerged()">Load Scores</button>
+
+  <div id="alert" class="alert"></div>
+  <div id="status" class="status"></div>
+
+  <table id="mergedTable" style="display:none;">
+    <thead>
+      <tr>
+        <th>ID</th><th>Name</th>
+        <th>Ind.</th><th>Group</th><th>Test</th><th>Project</th>
+        <th>SBA Total</th><th>SBA Scaled</th>
+        <th>Exam Raw</th><th>Exam Scaled</th>
+        <th>Total (100)</th>
+      </tr>
+    </thead>
+    <tbody></tbody>
+  </table>
+
+  <button onclick="approve()">✅ Approve Marks</button>
+
+  <script>
+    function loadMerged() {
+      const cls = document.getElementById("classSelect").value;
+      const sub = document.getElementById("subjectSelect").value;
+      document.getElementById("alert").textContent = "";
+      document.getElementById("status").textContent = "";
+      document.getElementById("mergedTable").style.display = "none";
+
+      if (!cls || !sub) return alert("Select class and subject");
+
+      const sbaList = JSON.parse(localStorage.getItem(`sba_${cls}_${sub}`)) || [];
+      const examList = JSON.parse(localStorage.getItem(`exam_${cls}_${sub}`)) || [];
+
+      if (sbaList.length === 0 || examList.length === 0) {
+        document.getElementById("alert").textContent = "⚠️ SBA or Exam scores not found.";
+        return;
+      }
+
+      const tbody = document.querySelector("#mergedTable tbody");
+      tbody.innerHTML = "";
+
+      sbaList.forEach(s => {
+        const exam = examList.find(e => e.student_id === s.student_id);
+        const examRaw = exam?.raw ?? null;
+        const examScaled = examRaw !== null ? Math.round((examRaw / 100) * 50) : null;
+        const total = (s.scaled ?? 0) + (examScaled ?? 0);
+
+        tbody.innerHTML += `
+          <tr>
+            <td>${s.student_id}</td>
+            <td>${s.full_name}</td>
+            <td>${s.individual}</td>
+            <td>${s.group}</td>
+            <td>${s.test}</td>
+            <td>${s.project}</td>
+            <td>${s.raw}</td>
+            <td>${s.scaled}</td>
+            <td>${examRaw ?? "-"}</td>
+            <td>${examScaled ?? "-"}</td>
+            <td>${examScaled !== null ? total : "-"}</td>
+          </tr>
+        `;
+      });
+
+      document.getElementById("mergedTable").style.display = "table";
+    }
+
+    function approve() {
+      const cls = document.getElementById("classSelect").value;
+      const sub = document.getElementById("subjectSelect").value;
+      if (!cls || !sub) return alert("Select class and subject first");
+
+      const approvals = JSON.parse(localStorage.getItem("approvalStatus")) || {};
+      const key = `approved_${cls}_${sub}`;
+      approvals[key] = "Approved";
+      localStorage.setItem("approvalStatus", JSON.stringify(approvals));
+
+      document.getElementById("status").textContent = `✅ Marks approved for ${sub} in ${cls}`;
+    }
+  </script>
+</body>
+</html>

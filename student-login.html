@@ -1,0 +1,112 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <title>Student Login</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <style>
+    body {
+      font-family: Arial, sans-serif;
+      background: #f4f9ff;
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      height: 100vh;
+    }
+    .login-box {
+      background: white;
+      padding: 35px;
+      border-radius: 8px;
+      box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+      width: 320px;
+    }
+    h2 {
+      text-align: center;
+      color: #0077cc;
+      margin-bottom: 25px;
+    }
+    label {
+      font-weight: bold;
+      display: block;
+      margin-top: 12px;
+    }
+    input {
+      width: 100%;
+      padding: 10px;
+      font-size: 14px;
+      margin-top: 5px;
+    }
+    button {
+      width: 100%;
+      padding: 12px;
+      margin-top: 20px;
+      background: #0077cc;
+      color: white;
+      font-size: 16px;
+      border: none;
+      border-radius: 4px;
+      cursor: pointer;
+    }
+    button:hover {
+      background: #005fa3;
+    }
+    .feedback {
+      margin-top: 15px;
+      font-size: 14px;
+      text-align: center;
+    }
+    .error { color: crimson; }
+    .success { color: green; }
+  </style>
+</head>
+<body>
+  <div class="login-box">
+    <h2>🔐 Student Login</h2>
+    <label for="idInput">Student ID</label>
+    <input type="text" id="idInput" placeholder="e.g. FM2_101" />
+
+    <label for="pinInput">4-digit PIN</label>
+    <input type="password" id="pinInput" maxlength="4" placeholder="Enter PIN" />
+
+    <button onclick="loginStudent()">Login</button>
+    <div id="feedback" class="feedback"></div>
+  </div>
+
+  <script>
+    function loginStudent() {
+      const id = document.getElementById("idInput").value.trim();
+      const pin = document.getElementById("pinInput").value.trim();
+      const feedback = document.getElementById("feedback");
+      feedback.textContent = "";
+      feedback.className = "feedback";
+
+      if (!id || !pin) {
+        feedback.textContent = "⚠️ Please enter both fields.";
+        feedback.classList.add("error");
+        return;
+      }
+
+      if (!/^\d{4}$/.test(pin)) {
+        feedback.textContent = "⚠️ PIN must be a 4-digit number.";
+        feedback.classList.add("error");
+        return;
+      }
+
+      const students = JSON.parse(localStorage.getItem("studentList")) || [];
+      const match = students.find(s => s.student_id === id && s.pin === pin);
+
+      if (!match) {
+        feedback.textContent = "❌ Invalid ID or PIN.";
+        feedback.classList.add("error");
+        return;
+      }
+
+      localStorage.setItem("activeStudent", JSON.stringify(match));
+      feedback.textContent = `✅ Welcome ${match.full_name}`;
+      feedback.classList.add("success");
+
+      setTimeout(() => window.location.href = "student-dashboard.html", 1000);
+    }
+  </script>
+</body>
+</html>

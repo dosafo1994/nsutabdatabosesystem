@@ -1,0 +1,283 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <title>Student Dashboard</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <style>
+    body {
+      font-family: Arial, sans-serif;
+      background: #f4f9ff;
+      padding: 20px;
+      max-width: 950px;
+      margin: auto;
+    }
+
+    h2, h3 {
+      color: #0077cc;
+      margin-bottom: 10px;
+    }
+
+    .section {
+      background: white;
+      padding: 20px;
+      border-radius: 10px;
+      margin-bottom: 25px;
+      border: 1px solid #ccc;
+    }
+
+    .student-info {
+      background: #ddeeff;
+      padding: 12px;
+      border-radius: 8px;
+      margin-bottom: 20px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+    }
+
+    .student-info h3 {
+      margin: 0;
+      font-size: 18px;
+    }
+
+    table {
+      width: 100%;
+      border-collapse: collapse;
+      margin-top: 10px;
+    }
+
+    th, td {
+      border: 1px solid #ccc;
+      padding: 8px;
+      text-align: left;
+      font-size: 14px;
+    }
+
+    th {
+      background-color: #e0ecf9;
+    }
+
+    .logout {
+      background: crimson;
+      color: white;
+      border: none;
+      border-radius: 6px;
+      padding: 8px 12px;
+      cursor: pointer;
+    }
+
+    .logout:hover {
+      background: #a30000;
+    }
+
+    .assignment-box {
+      background: #fff8e1;
+      border-left: 6px solid orange;
+      padding: 10px 15px;
+      border-radius: 8px;
+      margin-bottom: 10px;
+    }
+
+    .notice {
+      color: darkorange;
+      font-weight: bold;
+      margin-top: 10px;
+    }
+
+    .report-actions {
+      margin-top: 15px;
+    }
+
+    .report-actions button {
+      background: #0077cc;
+      color: white;
+      padding: 8px 14px;
+      margin-right: 10px;
+      border: none;
+      border-radius: 6px;
+      cursor: pointer;
+    }
+
+    .report-actions button:hover {
+      background: #005fa3;
+    }
+
+    #printView {
+      display: none;
+      margin-top: 20px;
+      background: #fff;
+      padding: 20px;
+      border-radius: 8px;
+      border: 1px solid #ccc;
+    }
+  </style>
+</head>
+<body>
+
+  <div class="student-info">
+    <h3>👋 Welcome, <span id="studentName">Student</span> · <span id="studentClass"></span></h3>
+    <button onclick="logout()" class="logout">Logout</button>
+  </div>
+
+  <div class="section">
+    <h3>📅 Academic Term</h3>
+    <p id="termDisplay">Academic Year: 2025 · Term 2</p>
+  </div>
+
+  <div class="section">
+    <h3>📄 Your Report Card</h3>
+    <div id="reportLockNotice" class="notice"></div>
+    <table id="reportTable" style="display:none;">
+      <thead>
+        <tr><th>Subject</th><th>Raw</th><th>SBA</th><th>Total</th><th>Grade</th><th>Remark</th></tr>
+      </thead>
+      <tbody></tbody>
+    </table>
+    <div style="margin-top:10px;"><strong>Position:</strong> <span id="studentPosition">--</span></div>
+
+    <div class="report-actions">
+      <button onclick="previewReport()">👁️ Preview Report</button>
+      <button onclick="downloadReport()">⬇️ Download Report</button>
+    </div>
+
+    <div id="printView"></div>
+  </div>
+
+  <div class="section">
+    <h3>📚 Assignments Posted</h3>
+    <div id="assignmentList"></div>
+  </div>
+
+  <div class="section">
+    <h3>📘 Score Breakdown</h3>
+    <table id="scoreBreakdown">
+      <thead><tr><th>Subject</th><th>Raw Score</th><th>SBA</th><th>Total</th></tr></thead>
+      <tbody></tbody>
+    </table>
+  </div>
+
+  <script>
+    const student = JSON.parse(localStorage.getItem("activeStudent")) || {};
+    const currentTerm = localStorage.getItem("currentTerm") || "Term 2";
+    const studentID = student.student_id;
+    const reportKey = `report_${student.class}_${studentID}`;
+    const reportStatusKey = `reportStatus_${studentID}_${currentTerm}`;
+    const notifyKey = `reportNotify_${studentID}`;
+
+    document.getElementById("studentName").textContent = student.full_name;
+    document.getElementById("studentClass").textContent = student.class;
+    document.getElementById("termDisplay").textContent = `Academic Year: 2025 · ${currentTerm}`;
+
+    function logout() {
+      localStorage.removeItem("activeStudent");
+      window.location.href = "index.html";
+    }
+
+    function loadReportCard() {
+      const data = JSON.parse(localStorage.getItem(reportKey)) || [];
+      const tbody = document.querySelector("#reportTable tbody");
+      const breakdown = document.querySelector("#scoreBreakdown tbody");
+
+      tbody.innerHTML = "";
+      breakdown.innerHTML = "";
+
+      data.forEach(subject => {
+        const { subject: sub, raw, sba, total, grade, remark } = subject;
+
+        tbody.innerHTML += `<tr>
+          <td>${sub}</td><td>${raw}</td><td>${sba}</td>
+          <td>${total}</td><td>${grade}</td><td>${remark}</td>
+        </tr>`;
+
+        breakdown.innerHTML += `<tr>
+          <td>${sub}</td><td>${raw}</td><td>${sba}</td><td>${total}</td>
+        </tr>`;
+      });
+
+      document.getElementById("studentPosition").textContent = student.position || "--";
+    }
+
+    function checkReportStatus() {
+      const status = localStorage.getItem(reportStatusKey);
+      if (status === "Available") {
+        document.getElementById("reportTable").style.display = "table";
+        loadReportCard();
+      } else {
+        document.getElementById("reportTable").style.display = "none";
+        document.getElementById("reportLockNotice").textContent = "⚠️ Report card not yet uploaded for this term.";
+      }
+    }
+
+    function showNotification() {
+      const notify = localStorage.getItem(notifyKey);
+      if (notify) {
+        alert(`📢 ${notify}`);
+        localStorage.removeItem(notifyKey);
+      }
+    }
+
+    function loadAssignments() {
+      const subjects = ["Math", "English", "Science", "Social Studies", "ICT", "French", "RME"];
+      const list = document.getElementById("assignmentList");
+      list.innerHTML = "";
+
+      subjects.forEach(sub => {
+        const key = `${sub}_${student.class}_assignment_${currentTerm}`;
+        const text = localStorage.getItem(key);
+        if (text) {
+          list.innerHTML += `<div class="assignment-box">
+            <strong>${sub}:</strong> ${text}
+          </div>`;
+        }
+      });
+
+      if (list.innerHTML === "") {
+        list.innerHTML = "<p>No assignments posted yet for this term.</p>";
+      }
+    }
+
+    function previewReport() {
+      const data = JSON.parse(localStorage.getItem(reportKey)) || [];
+      const container = document.getElementById("printView");
+      let html = `<h3 style="color:#0077cc;">📄 Report Card Preview</h3>`;
+      html += `<p><strong>Name:</strong> ${student.full_name}<br><strong>Class:</strong> ${student.class}<br><strong>Term:</strong> ${currentTerm}</p>`;
+      html += `<table style="width:100%; border-collapse:collapse;">`;
+      html += `<tr><th>Subject</th><th>Raw</th><th>SBA</th><th>Total</th><th>Grade</th><th>Remark</th></tr>`;
+      data.forEach(row => {
+        html += `<tr>
+          <td>${row.subject}</td><td>${row.raw}</td><td>${row.sba}</td>
+          <td>${row.total}</td><td>${row.grade}</td><td>${row.remark}</td>
+        </tr>`;
+      });
+      html += `</table>`;
+      html += `<p style="margin-top:10px;"><strong>Position:</strong> ${student.position || "--"}</p>`;      container.innerHTML = html;
+      container.style.display = "block";
+    }
+
+    function downloadReport() {
+      const data = JSON.parse(localStorage.getItem(reportKey)) || [];
+      let content = `Report Card · ${student.full_name} · ${student.class} · ${currentTerm}\n\n`;
+      content += `Subject | Raw | SBA | Total | Grade | Remark\n`;
+      data.forEach(r => {
+        content += `${r.subject} | ${r.raw} | ${r.sba} | ${r.total} | ${r.grade} | ${r.remark}\n`;
+      });
+      content += `\nPosition: ${student.position || "--"}`;
+
+      const blob = new Blob([content], { type: "text/plain" });
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement("a");
+      a.href = url;
+      a.download = `${student.full_name}_Report_${currentTerm}.txt`;
+      a.click();
+      URL.revokeObjectURL(url);
+    }
+
+    window.onload = () => {
+      showNotification();
+      checkReportStatus();
+      loadAssignments();
+    };
+  </script>
+</body>
+</html>

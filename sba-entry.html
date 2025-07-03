@@ -1,0 +1,208 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <title>SBA Entry</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <style>
+    body {
+      font-family: Arial;
+      background: #f4f9ff;
+      padding: 20px;
+      max-width: 900px;
+      margin: auto;
+    }
+
+    h2 {
+      color: #0077cc;
+      margin-bottom: 15px;
+    }
+
+    label, select {
+      font-size: 15px;
+      margin: 8px 5px 8px 0;
+      padding: 6px;
+    }
+
+    select {
+      width: 200px;
+    }
+
+    table {
+      width: 100%;
+      border-collapse: collapse;
+      margin-top: 20px;
+    }
+
+    th, td {
+      border: 1px solid #ccc;
+      padding: 10px;
+    }
+
+    th {
+      background-color: #e0ecf9;
+    }
+
+    input[type="number"] {
+      width: 60px;
+      padding: 4px;
+    }
+
+    button {
+      margin-top: 10px;
+      padding: 8px 14px;
+      background: #0077cc;
+      color: white;
+      border: none;
+      border-radius: 5px;
+    }
+
+    button:hover {
+      background: #005fa3;
+    }
+
+    #status {
+      margin-top: 15px;
+      font-weight: bold;
+    }
+
+    .invalid-mark {
+      background-color: #ffe7e7;
+      border: 2px solid red;
+    }
+  </style>
+</head>
+<body>
+  <h2>✏️ SBA Entry Panel (15 marks per component)</h2>
+
+  <label>Class:</label>
+  <select id="classSelect"><option value="">--Select Class--</option></select>
+
+  <label>Subject:</label>
+  <select id="subjectSelect"><option value="">--Select Subject--</option></select>
+
+  <button onclick="loadStudents()">Load Students</button>
+
+  <div id="status"></div>
+
+  <form onsubmit="saveSBA(event)">
+    <table id="sbaTable" style="display:none;">
+      <thead>
+        <tr>
+          <th>ID</th>
+          <th>Name</th>
+          <th>Individual</th>
+          <th>Group</th>
+          <th>Test</th>
+          <th>Project</th>
+        </tr>
+      </thead>
+      <tbody></tbody>
+    </table>
+    <button type="submit">💾 Save SBA</button>
+  </form>
+
+  <script>
+    const user = JSON.parse(localStorage.getItem("activeUser")) || {};
+    const classes = user.classes || [];
+    const subjects = user.subjects || [];
+
+    const classSelect = document.getElementById("classSelect");
+    const subjectSelect = document.getElementById("subjectSelect");
+
+    classes.forEach(cls => classSelect.innerHTML += `<option>${cls}</option>`);
+    subjects.forEach(sub => subjectSelect.innerHTML += `<option>${sub}</option>`);
+
+    function loadStudents() {
+      const cls = classSelect.value;
+      const sub = subjectSelect.value;
+      if (!cls || !sub) return alert("Select class and subject");
+
+      const students = JSON.parse(localStorage.getItem("studentList")) || [];
+      const filtered = students.filter(s => s.class === cls);
+      if (filtered.length === 0) return alert("No students in class");
+
+      const tbody = document.querySelector("#sbaTable tbody");
+      tbody.innerHTML = "";
+      filtered.forEach(s => {
+        tbody.innerHTML += `
+          <tr>
+            <td>${s.student_id}</td>
+            <td>${s.full_name}</td>
+            <td><input type="number" min="0" max="15" data-id="${s.student_id}" data-type="individual" /></td>
+            <td><input type="number" min="0" max="15" data-id="${s.student_id}" data-type="group" /></td>
+            <td><input type="number" min="0" max="15" data-id="${s.student_id}" data-type="test" /></td>
+            <td><input type="number" min="0" max="15" data-id="${s.student_id}" data-type="project" /></td>
+          </tr>
+        `;
+      });
+
+      document.getElementById("sbaTable").style.display = "table";
+      document.getElementById("status").textContent = "";
+    }
+
+    function validateMarks() {
+      let allValid = true;
+      const inputs = document.querySelectorAll("#sbaTable input[type='number']");
+      inputs.forEach(input => {
+        const value = parseFloat(input.value);
+        if (value < 0 || value > 15) {
+          input.classList.add("invalid-mark");
+          allValid = false;
+        } else {
+          input.classList.remove("invalid-mark");
+        }
+      });
+      return allValid;
+    }
+
+    function saveSBA(e) {
+      e.preventDefault();
+      const cls = classSelect.value;
+      const sub = subjectSelect.value;
+      const students = JSON.parse(localStorage.getItem("studentList")) || [];
+      const records = [];
+      const rows = document.querySelectorAll("#sbaTable tbody tr");
+
+      const status = document.getElementById("status");
+      status.textContent = "";
+
+      if (!validateMarks()) {
+        status.textContent = "❌ Please enter marks between 0–15 only.";
+        status.style.color = "crimson";
+        return;
+      }
+
+      rows.forEach(row => {
+        const id = row.querySelector("input[data-type='individual']").getAttribute("data-id");
+        const ind = parseFloat(row.querySelector("input[data-type='individual']").value) || 0;
+        const group = parseFloat(row.querySelector("input[data-type='group']").value) || 0;
+        const test = parseFloat(row.querySelector("input[data-type='test']").value) || 0;
+        const project = parseFloat(row.querySelector("input[data-type='project']").value) || 0;
+
+        const raw = ind + group + test + project;
+        const scaled = Math.round((raw / 60) * 50);
+        const student = students.find(s => s.student_id === id);
+
+        records.push({
+          student_id: id,
+          full_name: student.full_name,
+          class: cls,
+          subject: sub,
+          individual: ind,
+          group,
+          test,
+          project,
+          raw,
+          scaled
+        });
+      });
+
+      const key = `sba_${cls}_${sub}`;
+      localStorage.setItem(key, JSON.stringify(records));
+      status.textContent = `✅ SBA saved for ${sub} in ${cls}`;
+      status.style.color = "green";
+    }
+  </script>
+</body>
+</html>

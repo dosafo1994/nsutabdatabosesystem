@@ -1,0 +1,262 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <title>Teacher Manager</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <style>
+    body {
+      font-family: Arial, sans-serif;
+      background: #f4f9ff;
+      padding: 20px;
+      max-width: 1000px;
+      margin: auto;
+    }
+
+    h2 {
+      color: #0077cc;
+      margin-bottom: 10px;
+    }
+
+    .section {
+      background: #ffffff;
+      border: 1px solid #ccc;
+      padding: 20px;
+      border-radius: 10px;
+      margin-bottom: 30px;
+    }
+
+    input, select {
+      padding: 8px;
+      margin: 6px 0;
+      font-size: 14px;
+      width: 280px;
+      display: block;
+    }
+
+    .checkbox-group {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 12px;
+      margin-top: 10px;
+    }
+
+    .checkbox-group label {
+      background: #eef6ff;
+      border: 1px solid #ccc;
+      padding: 8px 14px;
+      border-radius: 6px;
+      cursor: pointer;
+    }
+
+    .checkbox-group input[type="checkbox"] {
+      margin-right: 8px;
+    }
+
+    button {
+      padding: 10px 18px;
+      font-size: 14px;
+      margin-top: 10px;
+      margin-right: 10px;
+      border: none;
+      border-radius: 5px;
+      background: #0077cc;
+      color: white;
+      cursor: pointer;
+    }
+
+    button:hover {
+      background: #005fa3;
+    }
+
+    table {
+      width: 100%;
+      margin-top: 10px;
+      border-collapse: collapse;
+    }
+
+    th, td {
+      border: 1px solid #ccc;
+      padding: 10px;
+      text-align: left;
+      font-size: 14px;
+      vertical-align: top;
+    }
+
+    th {
+      background-color: #e0ecf9;
+    }
+
+    .action-btn {
+      padding: 6px 12px;
+      margin: 4px 2px;
+      font-size: 13px;
+      border: none;
+      border-radius: 4px;
+      cursor: pointer;
+    }
+
+    .edit-btn {
+      background: #28a745;
+      color: white;
+    }
+
+    .edit-btn:hover {
+      background: #218838;
+    }
+
+    .remove-btn {
+      background: crimson;
+      color: white;
+    }
+
+    .remove-btn:hover {
+      background: #a30000;
+    }
+
+    .edit-input {
+      width: 100%;
+      padding: 6px;
+    }
+  </style>
+</head>
+<body>
+
+  <h2>🧑‍🏫 Teacher Details</h2>
+  <div class="section">
+    <input type="text" id="nameInput" placeholder="Full Name" />
+    <input type="text" id="phoneInput" placeholder="Phone Number" />
+    <input type="password" id="pinInput" placeholder="4-digit PIN" maxlength="4" />
+  </div>
+
+  <h2>🏫 Assigned Classes</h2>
+  <div class="section checkbox-group" id="classCheckboxes">
+    <label><input type="checkbox" value="JHS1"> JHS1</label>
+    <label><input type="checkbox" value="JHS2"> JHS2</label>
+    <label><input type="checkbox" value="JHS3"> JHS3</label>
+  </div>
+
+  <h2>📚 Assigned Subjects</h2>
+  <div class="section checkbox-group" id="subjectCheckboxes">
+    <label><input type="checkbox" value="Math"> Math</label>
+    <label><input type="checkbox" value="English"> English</label>
+    <label><input type="checkbox" value="Science"> Science</label>
+    <label><input type="checkbox" value="ICT"> ICT</label>
+    <label><input type="checkbox" value="RME"> RME</label>
+    <label><input type="checkbox" value="Social Studies"> Social Studies</label>
+    <label><input type="checkbox" value="French"> French</label>
+  </div>
+
+  <button onclick="saveTeacher()">💾 Save Teacher</button>
+
+  <h2>📋 Assigned Staff</h2>
+  <table id="teacherTable">
+    <thead>
+      <tr>
+        <th>Name</th><th>Phone</th><th>PIN</th><th>Subjects</th><th>Classes</th><th>Actions</th>
+      </tr>
+    </thead>
+    <tbody></tbody>
+  </table>
+
+  <script>
+    function getCheckedValues(groupId) {
+      return Array.from(document.querySelectorAll(`#${groupId} input:checked`)).map(b => b.value.trim());
+    }
+
+    function saveTeacher() {
+      const name = document.getElementById("nameInput").value.trim();
+      const phone = document.getElementById("phoneInput").value.trim();
+      const pin = document.getElementById("pinInput").value.trim();
+      const subjects = getCheckedValues("subjectCheckboxes");
+      const classes = getCheckedValues("classCheckboxes");
+
+      if (!name || !phone || !pin || subjects.length === 0 || classes.length === 0) {
+        alert("Please fill all fields and select at least one subject and class.");
+        return;
+      }
+
+      const users = JSON.parse(localStorage.getItem("userAccounts")) || [];
+      const existingIndex = users.findIndex(u => u.phone === phone);
+
+      const teacherData = {
+        name,
+        phone,
+        pin,
+        role: "teacher",
+        subjects,
+        classes
+      };
+
+      if (existingIndex >= 0) {
+        users[existingIndex] = teacherData;
+      } else {
+        users.push(teacherData);
+      }
+
+      localStorage.setItem("userAccounts", JSON.stringify(users));
+      loadTeachers();
+
+      document.getElementById("nameInput").value = "";
+      document.getElementById("phoneInput").value = "";
+      document.getElementById("pinInput").value = "";
+      document.querySelectorAll("input[type='checkbox']").forEach(box => box.checked = false);
+    }
+
+    function loadTeachers() {
+      const users = JSON.parse(localStorage.getItem("userAccounts")) || [];
+      const tbody = document.querySelector("#teacherTable tbody");
+      tbody.innerHTML = "";
+
+      users.forEach((u, index) => {
+        const row = document.createElement("tr");
+        row.innerHTML = `
+          <td>${u.name}</td>
+          <td>${u.phone}</td>
+          <td>${u.pin}</td>
+          <td>${(u.subjects || []).join(', ')}</td>
+          <td>${(u.classes || []).join(', ')}</td>
+          <td>
+            <button class="action-btn edit-btn" onclick="openEdit(${index})">Edit</button>
+            <button class="action-btn remove-btn" onclick="removeTeacher('${u.phone}')">Remove</button>
+          </td>
+        `;
+        tbody.appendChild(row);
+      });
+    }
+
+    function openEdit(index) {
+      const users = JSON.parse(localStorage.getItem("userAccounts")) || [];
+      const u = users[index];
+      const tbody = document.querySelector("#teacherTable tbody");
+      const row = document.createElement("tr");
+
+      row.innerHTML = `
+        <td><input class="edit-input" value="${u.name}" onchange="updateTeacher(${index}, 'name', this.value)" /></td>
+        <td><input class="edit-input" value="${u.phone}" onchange="updateTeacher(${index}, 'phone', this.value)" /></td>
+        <td><input class="edit-input" value="${u.pin}" onchange="updateTeacher(${index}, 'pin', this.value)" maxlength="4" /></td>
+        <td><input class="edit-input" value="${(u.subjects || []).join(',')}" onchange="updateTeacher(${index}, 'subjects', this.value.split(','))" /></td>
+        <td><input class="edit-input" value="${(u.classes || []).join(',')}" onchange="updateTeacher(${index}, 'classes', this.value.split(','))" /></td>
+        <td><button class="action-btn remove-btn" onclick="loadTeachers()">Done</button></td>
+      `;
+
+      tbody.replaceChild(row, tbody.children[index]);
+    }
+
+    function updateTeacher(index, key, value) {
+      const users = JSON.parse(localStorage.getItem("userAccounts")) || [];
+      users[index][key] = value;
+      localStorage.setItem("userAccounts", JSON.stringify(users));
+    }
+
+       function removeTeacher(phone) {
+      let users = JSON.parse(localStorage.getItem("userAccounts")) || [];
+      users = users.filter(u => u.phone !== phone);
+      localStorage.setItem("userAccounts", JSON.stringify(users));
+      loadTeachers();
+    }
+
+    window.onload = loadTeachers;
+  </script>
+</body>
+</html>
