@@ -8,97 +8,20 @@
   <script src="html2pdf.bundle.min.js"></script>
   <script src="guard.js"></script>
   <link rel="stylesheet" href="style.css" />
-
-  <script>
-    const activeUser = JSON.parse(localStorage.getItem("activeUser"));
-    if (!sessionStorage.getItem("role") && activeUser?.role === "headteacher") {
-      sessionStorage.setItem("username", activeUser.username);
-      sessionStorage.setItem("displayName", activeUser.displayName);
-      sessionStorage.setItem("role", activeUser.role);
-    }
-  </script>
-
   <style>
-    body {
-      font-family: Arial, sans-serif;
-      background: #fff;
-      padding: 40px;
-      max-width: 950px;
-      margin: auto;
-    }
-
-    .controls {
-      margin-bottom: 20px;
-    }
-
-    select, button {
-      padding: 8px 12px;
-      margin-right: 10px;
-      font-size: 14px;
-    }
-
-    .report {
-      border: 1px solid #ccc;
-      padding: 30px;
-      margin-top: 20px;
-    }
-
-    .top-row {
-      display: flex;
-      justify-content: space-between;
-      align-items: center;
-      margin-bottom: 10px;
-    }
-
-    .logo-box, .photo-box {
-      width: 120px;
-      height: 120px;
-      border: 1px solid #ccc;
-      background: #f9f9f9;
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      font-size: 12px;
-      color: #888;
-    }
-
-    .school-header {
-      text-align: center;
-      margin-bottom: 20px;
-    }
-
-    .student-meta {
-      margin-top: 20px;
-      line-height: 1.6;
-    }
-
-    .score-table {
-      width: 100%;
-      margin-top: 20px;
-      border-collapse: collapse;
-      font-size: 14px;
-    }
-
-    .score-table th, .score-table td {
-      border: 1px solid #ccc;
-      padding: 6px;
-      text-align: center;
-    }
-
-    .score-table th {
-      background: #f0f0f0;
-    }
-
-    .footer-details {
-      margin-top: 30px;
-      font-size: 14px;
-      line-height: 1.6;
-    }
-
-    @media print {
-      .controls { display: none; }
-      body { background: none; }
-    }
+    body { font-family: Arial, sans-serif; background: #fff; padding: 40px; max-width: 950px; margin: auto; }
+    .controls { margin-bottom: 20px; }
+    select, button { padding: 8px 12px; margin-right: 10px; font-size: 14px; }
+    .report { border: 1px solid #ccc; padding: 30px; margin-top: 20px; }
+    .top-row { display: grid; grid-template-columns: 120px 1fr 120px; align-items: center; margin-bottom: 10px; }
+    .logo-box img, .photo-box img { max-width: 100%; max-height: 120px; display: block; margin: auto; }
+    .school-header { text-align: center; }
+    .student-meta { margin-top: 20px; line-height: 1.6; }
+    .score-table { width: 100%; margin-top: 20px; border-collapse: collapse; font-size: 14px; }
+    .score-table th, .score-table td { border: 1px solid #ccc; padding: 6px; text-align: center; }
+    .score-table th { background: #f0f0f0; }
+    .footer-details { margin-top: 30px; font-size: 14px; line-height: 1.6; }
+    @media print { .controls { display: none; } body { background: none; } }
   </style>
 </head>
 <body>
@@ -106,6 +29,8 @@
     <select id="studentSelect"></select>
     <button onclick="generateReport()">🖨️ Build Report</button>
     <button onclick="downloadPDF()">📥 Download PDF</button>
+    <button onclick="uploadToDashboard()">📤 Upload to Dashboard</button>
+    <button onclick="bulkUploadReports()">📥 Bulk Upload All (Class)</button>
   </div>
 
   <div id="reportContainer"></div>
@@ -188,19 +113,21 @@
       const total = enriched.reduce((acc, s) => acc + s.total, 0);
       const rmk = termRemarks[id] || {};
 
-      const reportContainer = document.getElementById("reportContainer");
-      reportContainer.innerHTML = `
+      document.getElementById("reportContainer").innerHTML = `
         <div class="report" id="printable">
           <div class="top-row">
-            <div class="logo-box">Logo</div>
-            <div class="photo-box">Photo</div>
-          </div>
-
-          <div class="school-header">
-            <h2>GHANA EDUCATION SERVICE</h2>
-            <h3>Nkawkaw Nsuta B Basic School</h3>
-            <p><em>KNOWLEDGE IS POWER</em></p>
-            <h3>TERMINAL REPORT</h3>
+            <div class="logo-box">
+              <img src="assets/logo.png" alt="School Logo" />
+            </div>
+            <div class="school-header">
+              <h2>GHANA EDUCATION SERVICE</h2>
+              <h3>Nkawkaw Nsuta B Basic School</h3>
+              <p><em>KNOWLEDGE IS POWER</em></p>
+              <h3>TERMINAL REPORT</h3>
+            </div>
+            <div class="photo-box">
+              <img src="${student.photo || 'assets/default-photo.png'}" alt="Student Photo" />
+            </div>
           </div>
 
           <div class="student-meta">
@@ -216,32 +143,17 @@
 
           <table class="score-table">
             <thead>
-              <tr>
-                <th>SUBJECT</th>
-                <th>SBA</th>
-                <th>EXAM</th>
-                <th>TOTAL</th>
-                <th>GRADE</th>
-                <th>POSITION</th>
-                <th>REMARK</th>
-              </tr>
+              <tr><th>SUBJECT</th><th>SBA</th><th>EXAM</th><th>TOTAL</th><th>GRADE</th><th>POSITION</th><th>REMARK</th></tr>
             </thead>
             <tbody>
               ${enriched.map(s => `
                 <tr>
-                  <td>${s.subject}</td>
-                  <td>${s.sba}</td>
-                  <td>${s.exam}</td>
-                  <td>${s.total}</td>
-                  <td>${s.grade}</td>
-                  <td>${s.position}</td>
-                  <td>${s.remark}</td>
-                </tr>
-              `).join("")}
+                  <td>${s.subject}</td><td>${s.sba}</td><td>${s.exam}</td>
+                  <td>${s.total}</td><td>${s.grade}</td><td>${s.position}</td><td>${s.remark}</td>
+                </tr>`).join("")}
             </tbody>
           </table>
 
-          <div class="footer-details">
           <div class="footer-details">
             <p><strong>TOTAL:</strong> ${total}</p>
             <p><strong>ATTENDANCE:</strong> ${rmk.attendance || "-"}</p>
@@ -251,25 +163,94 @@
             <p><strong>CLASS TEACHER:</strong> ${rmk.teacher || "-"}</p>
             <p><strong>HEADTEACHER:</strong> ${rmk.headteacher || sessionStorage.getItem("displayName") || "-"}</p>
           </div>
-        </div>
-      `;
+        </div>`;
     }
+function downloadPDF() {
+  const report = document.getElementById("printable");
+  if (!report) {
+    alert("⚠️ Please build the report first.");
+    return;
+  }
 
-    function downloadPDF() {
-      const report = document.getElementById("printable");
-      if (!report) {
-        alert("Please build a report first.");
-        return;
-      }
+  html2pdf().set({
+    margin: 0.5,
+    filename: 'terminal-report.pdf',
+    image: { type: 'jpeg', quality: 0.98 },
+    html2canvas: { scale: 2 },
+    jsPDF: { unit: 'in', format: 'letter', orientation: 'portrait' }
+  }).from(report).save();
+}
 
-      html2pdf().set({
-        margin: 0.5,
-        filename: 'terminal-report.pdf',
-        image: { type: 'jpeg', quality: 0.98 },
-        html2canvas: { scale: 2 },
-        jsPDF: { unit: 'in', format: 'letter', orientation: 'portrait' }
-      }).from(report).save();
+function uploadToDashboard() {
+  const id = studentSelect.value;
+  const student = students.find(s => s.studentId === id);
+  if (!student) {
+    alert("❌ Please select a student first.");
+    return;
+  }
+
+  const scores = scoresData.filter(s => s.studentId === id).map(s => {
+    const gp = getGradePoint(s.finalScore);
+    return {
+      subject: s.subject,
+      raw: s.examScore,
+      sba: s.classScore,
+      total: s.finalScore,
+      grade: gp,
+      remark: getRemark(gp)
+    };
+  });
+
+  const term = termInfo.term || "Term 2";
+  const statusKey = `reportStatus_${id}_${term}`;
+  const notifyKey = `reportNotify_${id}`;
+  const reportKey = `report_${student.class}_${id}`;
+
+  localStorage.setItem(reportKey, JSON.stringify(scores));
+  localStorage.setItem(statusKey, "Available");
+  localStorage.setItem(notifyKey, `Your ${term} report card has been uploaded.`);
+
+  alert(`✅ Report uploaded to ${student.name}'s dashboard.`);
+}
+
+function bulkUploadReports() {
+  const id = studentSelect.value;
+  const selectedClass = students.find(s => s.studentId === id)?.class;
+  const term = termInfo.term || "Term 2";
+
+  if (!selectedClass) {
+    alert("❌ Select a student first to detect class.");
+    return;
+  }
+
+  const classStudents = students.filter(s => s.class === selectedClass);
+  let uploadedCount = 0;
+
+  classStudents.forEach(student => {
+    const studentID = student.studentId;
+    const scores = scoresData.filter(s => s.studentId === studentID).map(s => {
+      const gp = getGradePoint(s.finalScore);
+      return {
+        subject: s.subject,
+        raw: s.examScore,
+        sba: s.classScore,
+        total: s.finalScore,
+        grade: gp,
+        remark: getRemark(gp)
+      };
+    });
+
+    if (scores.length > 0) {
+      const statusKey = `reportStatus_${studentID}_${term}`;
+      const notifyKey = `reportNotify_${studentID}`;
+      const reportKey = `report_${student.class}_${studentID}`;
+
+      localStorage.setItem(reportKey, JSON.stringify(scores));
+      localStorage.setItem(statusKey, "Available");
+      localStorage.setItem(notifyKey, `Your ${term} report card has been uploaded.`);
+      uploadedCount++;
     }
-  </script>
-</body>
-</html>
+  });
+
+  alert(`📤 Bulk upload complete — ${uploadedCount} report(s) sent to ${selectedClass} dashboard.`);
+}
