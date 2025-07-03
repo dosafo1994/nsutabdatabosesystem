@@ -38,6 +38,7 @@
       padding: 10px;
       font-size: 14px;
       margin-top: 5px;
+      box-sizing: border-box;
     }
 
     button {
@@ -56,71 +57,97 @@
       background: #005fa3;
     }
 
-    .error {
-      color: crimson;
+    .feedback {
       margin-top: 15px;
       font-size: 14px;
       text-align: center;
     }
-  </style>
 
-  <!-- 🌱 Auto-seed accounts from GitHub -->
-  <script src="seed.js"></script>
+    .error { color: crimson; }
+    .success { color: green; }
+
+    .role-preview {
+      text-align: center;
+      margin-top: 5px;
+      font-size: 14px;
+      color: #555;
+    }
+  </style>
 </head>
 <body>
   <div class="login-box">
-    <h2>🔐 Login</h2>
+    <h2>🔐 Nsuta Portal Login</h2>
 
     <label for="phone">Phone Number</label>
-    <input type="text" id="phone" placeholder="e.g. 024XXXXXXX" />
+    <input type="text" id="phone" placeholder="e.g. 024XXXXXXX" oninput="detectRole()" />
 
     <label for="pin">4-digit PIN</label>
-    <input type="password" id="pin" maxlength="4" />
+    <input type="password" id="pin" maxlength="4" placeholder="Enter PIN" />
+
+    <div id="rolePreview" class="role-preview"></div>
 
     <button onclick="login()">Login</button>
-    <div class="error" id="errorBox"></div>
+    <div class="feedback" id="feedbackBox"></div>
   </div>
 
   <script>
+    function detectRole() {
+      const phone = document.getElementById("phone").value.trim();
+      const users = JSON.parse(localStorage.getItem("userAccounts")) || [];
+      const user = users.find(u => u.phone === phone);
+      const rolePreview = document.getElementById("rolePreview");
+
+      rolePreview.textContent = user ? `Detected Role: ${user.role.toUpperCase()}` : "";
+    }
+
     function login() {
       const phone = document.getElementById("phone").value.trim();
       const pin = document.getElementById("pin").value.trim();
-      const errorBox = document.getElementById("errorBox");
-
+      const feedbackBox = document.getElementById("feedbackBox");
       const users = JSON.parse(localStorage.getItem("userAccounts")) || [];
-      const found = users.find(u => u.phone === phone && u.pin === pin);
 
-      if (!found) {
-        errorBox.textContent = "Invalid phone number or PIN.";
+      feedbackBox.textContent = "";
+      feedbackBox.className = "feedback";
+
+      if (!phone || !pin) {
+        feedbackBox.textContent = "⚠️ Please fill in both fields.";
+        feedbackBox.classList.add("error");
         return;
       }
 
-      sessionStorage.setItem("username", phone);
+      if (!/^\d{4}$/.test(pin)) {
+        feedbackBox.textContent = "⚠️ PIN must be a 4-digit number.";
+        feedbackBox.classList.add("error");
+        return;
+      }
+
+      const found = users.find(u => u.phone === phone && u.pin === pin);
+
+      if (!found) {
+        feedbackBox.textContent = "❌ Invalid phone or PIN.";
+        feedbackBox.classList.add("error");
+        return;
+      }
+
+      // ✅ Store full record in activeUser
+      localStorage.setItem("activeUser", JSON.stringify(found));
+      sessionStorage.setItem("username", found.phone);
       sessionStorage.setItem("displayName", found.name);
       sessionStorage.setItem("role", found.role);
-      localStorage.setItem("activeUser", JSON.stringify({
-        username: phone,
-        displayName: found.name,
-        role: found.role
-      }));
+
+      feedbackBox.textContent = `✅ Logged in as ${found.role}`;
+      feedbackBox.classList.add("success");
 
       setTimeout(() => {
         if (found.role === "teacher") {
-          window.location.href = "score-entry.html";
+          window.location.href = "teacher-dashboard.html";
         } else if (found.role === "headteacher") {
           window.location.href = "dashboard.html";
         } else {
-          errorBox.textContent = "Unknown role: " + found.role;
+          feedbackBox.textContent = "⚠️ Unknown role: " + found.role;
+          feedbackBox.classList.add("error");
         }
-      }, 100);
-    }
-
-    // Optional: Pre-select role via ?role=teacher
-    const urlParams = new URLSearchParams(window.location.search);
-    const roleHint = urlParams.get("role");
-    if (roleHint) {
-      document.getElementById("phone").placeholder =
-        roleHint === "headteacher" ? "Headteacher phone" : "Teacher phone";
+      }, 800);
     }
   </script>
 </body>
