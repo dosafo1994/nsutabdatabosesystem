@@ -2,28 +2,33 @@
 <html lang="en">
 <head>
   <meta charset="UTF-8" />
-  <title>Enroll Students</title>
+  <title>Student Enrollment | Nsuta Portal</title>
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <script>
+    const activeUser = JSON.parse(localStorage.getItem("activeUser"));
+    if (!sessionStorage.getItem("role") && activeUser?.role === "headteacher") {
+      sessionStorage.setItem("username", activeUser.username);
+      sessionStorage.setItem("role", activeUser.role);
+    }
+  </script>
+  <script src="guard.js"></script>
   <style>
     body {
       font-family: Arial, sans-serif;
       background: #f4f9ff;
       padding: 20px;
-      max-width: 900px;
+      max-width: 950px;
       margin: auto;
     }
-
     h2, h3 {
       color: #0077cc;
       margin-bottom: 15px;
     }
-
     input, select {
       padding: 8px;
       margin: 5px;
       font-size: 14px;
     }
-
     button {
       padding: 8px 14px;
       font-size: 14px;
@@ -34,57 +39,47 @@
       cursor: pointer;
       margin-top: 10px;
     }
-
-    button:hover {
-      background: #005fa3;
-    }
-
-    #confirmBtn {
-      background: #28a745;
-    }
-
-    #confirmBtn:hover {
-      background: #218838;
-    }
-
+    button:hover { background: #005fa3; }
+    #confirmBtn { background: #28a745; }
+    #confirmBtn:hover { background: #218838; }
     table {
       width: 100%;
       border-collapse: collapse;
       margin-top: 20px;
     }
-
     th, td {
       border: 1px solid #ccc;
       padding: 8px;
       text-align: left;
     }
-
-    th {
-      background-color: #e0ecf9;
-    }
-
+    th { background-color: #e0ecf9; }
     .action-btn {
       background: crimson;
       padding: 4px 10px;
       font-size: 13px;
       margin-left: 5px;
+      border: none;
+      color: white;
+      border-radius: 4px;
+      cursor: pointer;
     }
-
-    .action-btn:hover {
-      background: #a30000;
-    }
-
-    #uploadStatus {
+    .action-btn:hover { background: #a30000; }
+    #uploadStatus, #feedback {
       margin-top: 10px;
       font-weight: bold;
-      color: green;
+    }
+    #photoPreview img {
+      border: 1px solid #ccc;
+      margin-top: 8px;
+      width: 100px;
+      height: 100px;
+      object-fit: cover;
     }
   </style>
 </head>
 <body>
   <h2>📘 Student Enrollment</h2>
 
-  <!-- CSV Upload Section -->
   <h3>📂 Upload Students from CSV</h3>
   <input type="file" id="csvFile" accept=".csv" />
   <button onclick="previewCSV()">Preview CSV</button>
@@ -92,20 +87,30 @@
   <button id="confirmBtn" style="display:none;" onclick="confirmUpload()">✅ Confirm Upload</button>
   <div id="uploadStatus"></div>
 
-  <!-- Manual Entry Form -->
   <h3>➕ Add New Student</h3>
   <input type="text" id="idInput" placeholder="Student ID" />
   <input type="text" id="nameInput" placeholder="Full Name" />
-  <input type="text" id="classInput" placeholder="Class" />
+  <select id="classInput">
+    <option value="">Select Class</option>
+    <option>JHS1</option>
+    <option>JHS2</option>
+    <option>JHS3</option>
+  </select>
   <select id="genderInput">
     <option value="">Select Gender</option>
-    <option value="Male">Male</option>
-    <option value="Female">Female</option>
+    <option>Male</option>
+    <option>Female</option>
   </select>
-  <button onclick="addStudent()">Add</button>
+  <input type="text" id="photoInput" placeholder="Photo URL (optional)" />
+  <div id="photoPreview">
+    <img src="assets/default-photo.png" id="previewImg" alt="Preview" />
+  </div>
+  <button onclick="addStudent()">Add Student</button>
+  <div id="feedback"></div>
 
-  <!-- Student Table -->
-  <h3 style="margin-top:30px;">🧾 All Enrolled Students</h3>
+  <button onclick="exportStudents()" style="float:right;">⬇️ Export as CSV</button>
+
+  <h3 style="margin-top:50px;">🧾 All Enrolled Students</h3>
   <table id="studentTable">
     <thead>
       <tr>
@@ -119,8 +124,7 @@
     let previewData = [];
 
     function previewCSV() {
-      const fileInput = document.getElementById("csvFile");
-      const file = fileInput.files[0];
+      const file = document.getElementById("csvFile").files[0];
       const preview = document.getElementById("csvPreview");
       const confirmBtn = document.getElementById("confirmBtn");
       const uploadStatus = document.getElementById("uploadStatus");
@@ -129,33 +133,29 @@
       uploadStatus.textContent = "";
       previewData = [];
 
-      if (!file) {
-        alert("Please select a CSV file.");
-        return;
-      }
+      if (!file) return alert("Please select a CSV file.");
 
       const reader = new FileReader();
       reader.onload = function (e) {
         const lines = e.target.result.trim().split("\n");
+        const hasHeader = lines[0].toLowerCase().includes("id") || lines[0].toLowerCase().includes("name");
+        const startIndex = hasHeader ? 1 : 0;
+
         let html = "<table><tr><th>ID</th><th>Name</th><th>Class</th><th>Gender</th></tr>";
 
-        for (let i = 1; i < lines.length; i++) {
-          const [id, name, cls, gender] = lines[i].split(",");
+        for (let i = startIndex; i < lines.length; i++) {
+          const [id, name, cls, gender] = lines[i].split(",").map(p => p?.trim());
           if (id && name && cls && gender) {
-            const student = {
-              student_id: id.trim(),
-              full_name: name.trim(),
-              class: cls.trim(),
-              gender: gender.trim()
-            };
+            const student = { student_id: id, full_name: name, class: cls, gender };
             previewData.push(student);
-            html += `<tr><td>${student.student_id}</td><td>${student.full_name}</td><td>${student.class}</td><td>${student.gender}</td></tr>`;
+            html += `<tr><td>${id}</td><td>${name}</td><td>${cls}</td><td>${gender}</td></tr>`;
           }
         }
 
         html += "</table>";
         preview.innerHTML = html;
-        confirmBtn.style.display = "inline-block";
+        confirmBtn.style.display = previewData.length > 0 ? "inline-block" : "none";
+        if (previewData.length === 0) alert("⚠️ No valid student rows detected.");
       };
 
       reader.readAsText(file);
@@ -163,10 +163,13 @@
 
     function confirmUpload() {
       if (previewData.length === 0) return;
-      const existing = JSON.parse(localStorage.getItem("studentList")) || [];
+      let existing = JSON.parse(localStorage.getItem("studentList")) || [];
+
+      previewData = previewData.filter(p => !existing.some(e => e.student_id === p.student_id));
       const updated = [...existing, ...previewData];
+
       localStorage.setItem("studentList", JSON.stringify(updated));
-      document.getElementById("uploadStatus").textContent = `✅ ${previewData.length} students added successfully.`;
+      document.getElementById("uploadStatus").textContent = `✅ ${previewData.length} new students added.`;
       document.getElementById("csvFile").value = "";
       document.getElementById("csvPreview").innerHTML = "";
       document.getElementById("confirmBtn").style.display = "none";
@@ -176,16 +179,32 @@
     function addStudent() {
       const id = document.getElementById("idInput").value.trim();
       const name = document.getElementById("nameInput").value.trim();
-      const cls = document.getElementById("classInput").value.trim();
+      const cls = document.getElementById("classInput").value;
       const gender = document.getElementById("genderInput").value;
+      const photo = document.getElementById("photoInput").value.trim();
+      const feedback = document.getElementById("feedback");
 
       if (!id || !name || !cls || !gender) {
-        alert("Please fill all fields.");
+        feedback.textContent = "⚠️ Fill in all fields.";
+        feedback.style.color = "crimson";
         return;
       }
 
-      const students = JSON.parse(localStorage.getItem("studentList")) || [];
-      students.push({ student_id: id, full_name: name, class: cls, gender });
+      let students = JSON.parse(localStorage.getItem("studentList")) || [];
+      if (students.some(s => s.student_id === id)) {
+        feedback.textContent = "⚠️ Student ID already exists.";
+        feedback.style.color = "crimson";
+        return;
+      }
+
+      students.push({
+        student_id: id,
+        full_name: name,
+        class: cls,
+        gender,
+        photo: photo || "assets/default-photo.png"
+      });
+
       localStorage.setItem("studentList", JSON.stringify(students));
       loadStudents();
 
@@ -193,7 +212,16 @@
       document.getElementById("nameInput").value = "";
       document.getElementById("classInput").value = "";
       document.getElementById("genderInput").value = "";
+      document.getElementById("photoInput").value = "";
+      document.getElementById("previewImg").src = "assets/default-photo.png";
+      feedback.textContent = "✅ Student added successfully.";
+      feedback.style.color = "green";
     }
+
+    document.getElementById("photoInput").addEventListener("input", e => {
+      const url = e.target.value.trim();
+      document.getElementById("previewImg").src = url || "assets/default-photo.png";
+    });
 
     function loadStudents() {
       const students = JSON.parse(localStorage.getItem("studentList")) || [];
@@ -202,18 +230,25 @@
 
       students.forEach((s, index) => {
         const row = document.createElement("tr");
-
         row.innerHTML = `
           <td><input value="${s.student_id}" onchange="editStudent(${index}, 'student_id', this.value)" /></td>
           <td><input value="${s.full_name}" onchange="editStudent(${index}, 'full_name', this.value)" /></td>
-          <td><input value="${s.class}" onchange="editStudent(${index}, 'class', this.value)" /></td>
           <td>
-            <select onchange="editStudent(${index}, 'gender', this.value)">
-              <option ${s.gender==="Male"?"selected":""}>Male</option>
-              <option ${s.gender==="Female"?"selected":""}>Female</option>
+            <select onchange="editStudent(${index}, 'class', this.value)">
+              <option ${s.class === "JHS1" ? "selected" : ""}>JHS1</option>
+              <option ${s.class === "JHS2" ? "selected" : ""}>JHS2</option>
+              <option ${s.class === "JHS3" ? "selected" : ""}>JHS3</option>
             </select>
           </td>
-          <td><button class="action-btn" onclick="removeStudent(${index})">Remove</button></td>
+          <td>
+            <select onchange="editStudent(${index}, 'gender', this.value)">
+              <option ${s.gender === "Male" ? "selected" : ""}>Male</option>
+              <option ${s.gender === "Female" ? "selected" : ""}>Female</option>
+            </select>
+          </td>
+          <td>
+            <button class="action-btn" onclick="removeStudent(${index})">Remove</button>
+          </td>
         `;
         tbody.appendChild(row);
       });
@@ -230,6 +265,22 @@
       students.splice(index, 1);
       localStorage.setItem("studentList", JSON.stringify(students));
       loadStudents();
+    }
+
+    function exportStudents() {
+      const students = JSON.parse(localStorage.getItem("studentList")) || [];
+      if (students.length === 0) return alert("No student data available.");
+
+      let csvContent = "ID,Name,Class,Gender\n";
+      students.forEach(s => {
+        csvContent += `${s.student_id},${s.full_name},${s.class},${s.gender}\n`;
+      });
+
+      const blob = new Blob([csvContent], { type: "text/csv;charset=utf-8;" });
+      const link = document.createElement("a");
+      link.href = URL.createObjectURL(blob);
+      link.download = "Nsuta_Student_List.csv";
+      link.click();
     }
 
     window.onload = loadStudents;
