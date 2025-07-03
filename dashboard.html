@@ -6,14 +6,13 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <script src="router.js"></script>
   <script>
-  const activeUser = JSON.parse(localStorage.getItem("activeUser"));
-  if (!sessionStorage.getItem("role") && activeUser?.role === "headteacher") {
-    sessionStorage.setItem("username", activeUser.username);
-    sessionStorage.setItem("displayName", activeUser.displayName);
-    sessionStorage.setItem("role", activeUser.role);
-  }
-</script>
-<script src="guard.js"></script>
+    const activeUser = JSON.parse(localStorage.getItem("activeUser"));
+    if (!sessionStorage.getItem("role") && activeUser?.role === "headteacher") {
+      sessionStorage.setItem("username", activeUser.username);
+      sessionStorage.setItem("displayName", activeUser.displayName);
+      sessionStorage.setItem("role", activeUser.role);
+    }
+  </script>
   <script src="guard.js"></script>
 
   <style>
@@ -113,7 +112,7 @@
         <h3>📋 Enroll Students</h3>
         <p>Add or remove student records</p>
       </div>
-      <div class="nav-card" onclick="navigate('teachers.html')">
+      <div class="nav-card" onclick="navigate('teacher-manager.html')">
         <h3>👥 Manage Teachers</h3>
         <p>Assign subjects & classes</p>
       </div>
@@ -121,9 +120,9 @@
         <h3>📆 Term Settings</h3>
         <p>Set academic year & promotions</p>
       </div>
-      <div class="nav-card" onclick="navigate('submission.html')">
-        <h3>📝 Review Scores</h3>
-        <p>Accept or reject submissions</p>
+      <div class="nav-card" onclick="navigate('merged-review.html')">
+        <h3>📊 Merged Score Review</h3>
+        <p>View SBA + Exam totals and approve</p>
       </div>
       <div class="nav-card" onclick="navigate('report.html')">
         <h3>🖨️ Print Reports</h3>
@@ -151,7 +150,7 @@
     function logout() {
       sessionStorage.clear();
       localStorage.removeItem("activeUser");
-      location.href = "index.html";
+      location.href = "login.html";
     }
   </script>
 </body>
