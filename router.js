@@ -9,8 +9,9 @@ function navigate(path) {
     "dashboard.html",
     "score-entry.html",
     "report.html",
-    "submission.html",
-    "account.html",
+    "sba-entry.html",
+    "student-dashboard.html",
+    "merged-review.html",
     "term.html",
     "teachers.html",
     "profile.html"
