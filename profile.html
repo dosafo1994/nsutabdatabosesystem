@@ -4,29 +4,21 @@
   <meta charset="UTF-8" />
   <title>Headteacher Profile | Nsuta Portal</title>
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <link rel="stylesheet" href="style.css" />
-  <script src="router.js"></script>
-
-  <!-- Session restoration -->
   <script>
     const activeUser = JSON.parse(localStorage.getItem("activeUser"));
-    if (
-      !sessionStorage.getItem("role") &&
-      activeUser?.role === "headteacher"
-    ) {
+    if (!sessionStorage.getItem("role") && activeUser?.role === "headteacher") {
       sessionStorage.setItem("username", activeUser.username);
       sessionStorage.setItem("displayName", activeUser.displayName);
       sessionStorage.setItem("role", activeUser.role);
     }
   </script>
   <script src="guard.js"></script>
-
   <style>
     body {
       font-family: Arial, sans-serif;
       background: #f4f9ff;
       padding: 40px;
-      max-width: 500px;
+      max-width: 520px;
       margin: auto;
     }
 
@@ -41,15 +33,30 @@
       font-weight: bold;
     }
 
+    .input-wrapper {
+      position: relative;
+    }
+
     input {
       width: 100%;
       padding: 10px;
       font-size: 16px;
       margin-top: 5px;
+      box-sizing: border-box;
+    }
+
+    .eye-icon {
+      position: absolute;
+      right: 10px;
+      top: 50%;
+      transform: translateY(-50%);
+      cursor: pointer;
+      font-size: 18px;
+      color: #888;
     }
 
     button {
-      padding: 10px 20px;
+      padding: 12px 20px;
       margin-top: 30px;
       background: #0077cc;
       color: white;
@@ -115,8 +122,17 @@
   <label for="phone">Phone Number</label>
   <input type="text" id="phone" />
 
-  <label for="pin">Change PIN (optional)</label>
-  <input type="password" id="pin" placeholder="Enter new 4-digit PIN" maxlength="4" />
+  <label for="oldPin">Current PIN</label>
+  <div class="input-wrapper">
+    <input type="password" id="oldPin" maxlength="4" />
+    <span class="eye-icon" onclick="togglePin('oldPin')">👁️</span>
+  </div>
+
+  <label for="newPin">New PIN</label>
+  <div class="input-wrapper">
+    <input type="password" id="newPin" maxlength="4" />
+    <span class="eye-icon" onclick="togglePin('newPin')">👁️</span>
+  </div>
 
   <button onclick="updateProfile()">Save Changes</button>
 
@@ -136,50 +152,87 @@
       document.getElementById("phone").value = head.phone || "";
     }
 
+    function togglePin(fieldId) {
+      const input = document.getElementById(fieldId);
+      input.type = input.type === "password" ? "text" : "password";
+    }
+
     function updateProfile() {
       const newName = document.getElementById("name").value.trim();
       const newPhone = document.getElementById("phone").value.trim();
-      const newPin = document.getElementById("pin").value.trim();
-
+      const oldPin = document.getElementById("oldPin").value.trim();
+      const newPin = document.getElementById("newPin").value.trim();
       const statusBox = document.getElementById("statusBox");
+      statusBox.innerHTML = "";
 
       if (!newName || !newPhone) {
-        statusBox.innerHTML = `<div class="status error">Please enter name and phone.</div>`;
+        statusBox.innerHTML = `<div class="status error">⚠️ Please enter name and phone number.</div>`;
         return;
       }
 
-      if (
-        users.some(u => u.phone === newPhone && u.phone !== username)
-      ) {
-        statusBox.innerHTML = `<div class="status error">Phone number already used.</div>`;
+      if (users.some(u => u.phone === newPhone && u.phone !== username)) {
+        statusBox.innerHTML = `<div class="status error">⚠️ Phone number already used by another user.</div>`;
         return;
+      }
+
+      // PIN update logic
+      if (oldPin || newPin) {
+        if (!/^\d{4}$/.test(oldPin)) {
+          statusBox.innerHTML = `<div class="status error">⚠️ Enter your current 4-digit PIN to authorize change.</div>`;
+          return;
+        }
+
+        if (!/^\d{4}$/.test(newPin)) {
+          statusBox.innerHTML = `<div class="status error">⚠️ New PIN must be exactly 4 digits.</div>`;
+          return;
+        }
+
+        if (head.pin !== oldPin) {
+          statusBox.innerHTML = `<div class="status error">❌ Current PIN incorrect. Change not authorized.</div>`;
+          return;
+        }
+
+        head.pin = newPin;
       }
 
       head.name = newName;
       head.phone = newPhone;
 
-      if (newPin) {
-        if (!/^\d{4}$/.test(newPin)) {
-          statusBox.innerHTML = `<div class="status error">PIN must be 4 digits.</div>`;
-          return;
-        }
-        head.pin = newPin;
-      }
-
       localStorage.setItem("userAccounts", JSON.stringify(users));
-
-      // Update session and activeUser
       sessionStorage.setItem("username", newPhone);
       sessionStorage.setItem("displayName", newName);
-
       localStorage.setItem("activeUser", JSON.stringify({
         username: newPhone,
         displayName: newName,
         role: "headteacher"
       }));
 
-      statusBox.innerHTML = `<div class="status success">✅ Profile updated successfully</div>`;
-      document.getElementById("pin").value = "";
+      // Clear inputs
+      document.getElementById("oldPin").value = "";
+      document.getElementById("newPin").value = "";
+
+      statusBox.innerHTML = `<div class="status success">✅ Profile updated locally. Syncing to GitHub...</div>`;
+
+      fetch("https://your-backend.com/update-profile", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          updatedContent: users,
+          commitMessage: `Updated headteacher profile (${newPhone}) via portal`
+        })
+      })
+      .then(res => res.json())
+      .then(data => {
+        if (data.success) {
+          statusBox.innerHTML += `<div class="status success">✅ Synced to GitHub successfully.</div>`;
+        } else {
+          statusBox.innerHTML += `<div class="status error">⚠️ GitHub sync failed: ${data.error || "Unknown error"}</div>`;
+        }
+      })
+      .catch(err => {
+        console.error(err);
+        statusBox.innerHTML += `<div class="status error">❌ Could not contact sync server.</div>`;
+      });
     }
   </script>
 </body>
