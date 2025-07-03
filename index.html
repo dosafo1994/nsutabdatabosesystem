@@ -2,53 +2,101 @@
 <html lang="en">
 <head>
   <meta charset="UTF-8" />
-  <title>Welcome | Nsuta Portal</title>
+  <title>Welcome | Nkawkaw Nsuta B Basic School</title>
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <link rel="icon" href="logo.png" type="image/png" />
+  <script src="seed.js"></script>
   <style>
     body {
-      font-family: Arial, sans-serif;
+      font-family: 'Segoe UI', sans-serif;
       background: linear-gradient(to right, #dbefff, #f4f9ff);
       text-align: center;
-      padding: 50px;
+      padding-top: 60px;
+      min-height: 100vh;
+    }
+
+    .banner {
+      font-size: 22px;
+      font-weight: bold;
+      margin-bottom: 20px;
+      color: #0077cc;
     }
 
     h1 {
-      color: #0077cc;
+      font-size: 24px;
       margin-bottom: 10px;
+      color: #333;
     }
 
     p {
       font-size: 16px;
-      color: #333;
       margin-bottom: 40px;
+      color: #444;
     }
 
-    .role-btn {
-      display: block;
+    .card-container {
+      display: flex;
+      justify-content: center;
+      gap: 40px;
+      flex-wrap: wrap;
+      margin-bottom: 60px;
+    }
+
+    .role-card {
+      background: white;
+      border: 1px solid #ccc;
+      border-radius: 10px;
+      padding: 30px;
       width: 250px;
-      margin: 12px auto;
-      padding: 12px;
-      font-size: 16px;
-      background: #0077cc;
-      color: white;
-      border: none;
-      border-radius: 6px;
+      box-shadow: 0 2px 6px rgba(0,0,0,0.1);
       cursor: pointer;
+      transition: 0.3s ease;
     }
 
-    .role-btn:hover {
-      background: #005fa3;
+    .role-card:hover {
+      background-color: #eef6ff;
+    }
+
+    .role-card h2 {
+      margin-bottom: 10px;
+      font-size: 18px;
+      color: #0077cc;
+    }
+
+    .role-card p {
+      font-size: 14px;
+      color: #555;
+    }
+
+    footer {
+      margin-top: 40px;
+      font-size: 12px;
+      color: #777;
     }
   </style>
-
-  <!-- 🌱 Auto-seed default accounts -->
-  <script src="seed.js"></script>
 </head>
 <body>
-  <h1>👋 Welcome to Nsuta Academic Portal</h1>
-  <p>Select your role to continue</p>
+  <div class="banner">Nkawkaw Nsuta B Basic School</div>
+  <h1>Welcome to the Academic Score Portal</h1>
+  <p>Please select your role to continue</p>
 
-  <button class="role-btn" onclick="window.location.href='login.html?role=teacher'">🙋‍♂️ I am a Teacher</button>
-  <button class="role-btn" onclick="window.location.href='login.html?role=headteacher'">🎓 I am a Headteacher</button>
+  <div class="card-container">
+    <div class="role-card" onclick="window.location.href='login.html?role=teacher'">
+      <h2>👩‍🏫 I’m a Teacher</h2>
+      <p>Enter student scores and manage assigned subjects</p>
+    </div>
+
+    <div class="role-card" onclick="window.location.href='login.html?role=headteacher'">
+      <h2>🧑‍💼 I’m the Headteacher</h2>
+      <p>Review results, manage teachers, and print reports</p>
+    </div>
+
+    <div class="role-card" onclick="window.location.href='student-login.html'">
+      <h2>🎓 I’m a Student</h2>
+      <p>View your report card, assignments, and scores</p>
+    </div>
+  </div>
+
+  <footer>Score Suite &copy; 2025 Nkawkaw Nsuta B Basic School</footer>
 </body>
 </html>
