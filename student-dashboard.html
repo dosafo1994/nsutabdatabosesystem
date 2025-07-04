@@ -161,7 +161,7 @@
   <script>
     async function loadAssignments() {
   const student = JSON.parse(localStorage.getItem("activeStudent")) || {};
-  const term = localStorage.getItem("currentTerm") || "Term 2";
+  const term = localStorage.getItem("currentTerm") || "";
   const list = document.getElementById("assignmentList");
   list.innerHTML = "";
 
