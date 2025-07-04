@@ -7,7 +7,7 @@
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
   <script>
     // ✅ Supabase Initialization FIRST
-    const supabase = supabase.createClient(
+     const supabase = window.supabase.createClient(
       "https://iguspjforzyndedxafdi.supabase.co", // 🔁 Replace with your Supabase URL
       "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImlndXNwamZvcnp5bmRlZHhhZmRpIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTE2MDc5MzksImV4cCI6MjA2NzE4MzkzOX0.h_OF0GcsaXPJm7OuuA3fCz4FaXV3_VBXG_WLr0zafVE"                        // 🔁 Replace with your Supabase anon key
     );
