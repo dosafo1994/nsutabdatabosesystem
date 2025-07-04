@@ -141,6 +141,11 @@
   </div>
 
   <script>
+    // Replace these with your actual project values from Supabase → Project Settings → API
+const SUPABASE_URL = "https://iguspjforzyndedxafdi.supabase.co";
+const SUPABASE_ANON_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImlndXNwamZvcnp5bmRlZHhhZmRpIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTE2MDc5MzksImV4cCI6MjA2NzE4MzkzOX0.h_OF0GcsaXPJm7OuuA3fCz4FaXV3_VBXG_WLr0zafVE";
+
+const supabase = supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
     const displayName = sessionStorage.getItem("displayName") || "Headteacher";
     document.getElementById("username").textContent = displayName;
 
