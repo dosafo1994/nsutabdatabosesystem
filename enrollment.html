@@ -152,7 +152,7 @@
         photo: photo || "assets/default-photo.png"
       };
 
-      const { data, error } = await supabase.from("students").insert([student]);
+      const { data, error } = await supabase.from("Enrollment").insert([student]);
 
       if (error) {
         feedback.textContent = "❌ Failed to save student: " + error.message;
