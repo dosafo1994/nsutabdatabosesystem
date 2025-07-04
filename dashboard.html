@@ -148,6 +148,37 @@
   </div>
 
   <script>
+    async function loadScoreStatus() {
+  const term = document.getElementById("termFilter").value;
+  const box = document.getElementById("scoreStatusBox");
+  box.innerHTML = "Loading...";
+
+  const { data, error } = await supabase
+    .from("scores")
+    .select("*")
+    .eq("term", term);
+
+  if (error) {
+    box.innerHTML = "❌ Failed to load score data.";
+    return;
+  }
+
+  const grouped = {};
+  data.forEach(entry => {
+    const key = `${entry.class} - ${entry.subject}`;
+    if (!grouped[key]) grouped[key] = [];
+    grouped[key].push(entry.teacher_id);
+  });
+
+  let html = "<table><tr><th>Class</th><th>Subject</th><th>Submitted By</th></tr>";
+  for (const key in grouped) {
+    const [cls, subj] = key.split(" - ");
+    html += `<tr><td>${cls}</td><td>${subj}</td><td>${grouped[key].join(", ")}</td></tr>`;
+  }
+  html += "</table>";
+
+  box.innerHTML = html;
+}
     // Replace these with your actual project values from Supabase → Project Settings → API
 const SUPABASE_URL = "https://iguspjforzyndedxafdi.supabase.co";
 const SUPABASE_ANON_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImlndXNwamZvcnp5bmRlZHhhZmRpIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTE2MDc5MzksImV4cCI6MjA2NzE4MzkzOX0.h_OF0GcsaXPJm7OuuA3fCz4FaXV3_VBXG_WLr0zafVE";
