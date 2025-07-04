@@ -180,19 +180,44 @@
     }
 
     function addStudent() {
-      const id = document.getElementById("idInput").value.trim();
-      const name = document.getElementById("nameInput").value.trim();
-      const cls = document.getElementById("classInput").value;
-      const gender = document.getElementById("genderInput").value;
-      const pin = document.getElementById("pinInput").value.trim();
-      const photo = document.getElementById("photoInput").value.trim();
-      const feedback = document.getElementById("feedback");
+  const id = document.getElementById("idInput").value.trim();
+  const name = document.getElementById("nameInput").value.trim();
+  const cls = document.getElementById("classInput").value;
+  const gender = document.getElementById("genderInput").value;
+  const pin = document.getElementById("pinInput").value.trim();
+  const photo = document.getElementById("photoInput").value.trim();
+  const feedback = document.getElementById("feedback");
 
-      if (!id || !name || !cls || !gender || !/^\d{4}$/.test(pin)) {
-        feedback.textContent = "⚠️ Fill in all fields correctly. PIN must be 4 digits.";
-        feedback.style.color = "crimson";
-        return;
-      }
+  if (!id || !name || !cls || !gender || !/^\d{4}$/.test(pin)) {
+    feedback.textContent = "⚠️ Fill in all fields correctly. PIN must be 4 digits.";
+    feedback.style.color = "crimson";
+    return;
+  }
+
+  // ✅ Place this here:
+  const student = {
+    student_id: id,
+    full_name: name,
+    class: cls,
+    gender,
+    pin,
+    photo: photo || "assets/default-photo.png"
+  };
+
+  addStudentToSupabase(student); // 👈 This sends it to Supabase
+
+  // Optional: Clear form and show feedback
+  document.getElementById("idInput").value = "";
+  document.getElementById("nameInput").value = "";
+  document.getElementById("classInput").value = "";
+  document.getElementById("genderInput").value = "";
+  document.getElementById("pinInput").value = "";
+  document.getElementById("photoInput").value = "";
+  document.getElementById("previewImg").src = "assets/default-photo.png";
+  feedback.textContent = "✅ Student added successfully.";
+  feedback.style.color = "green";
+}
+      
 
      async function addStudentToSupabase(student) {
   const { data, error } = await supabase
