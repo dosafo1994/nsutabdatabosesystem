@@ -159,6 +159,9 @@
   </div>
 
   <script>
+    const SUPABASE_URL = "https://iguspjforzyndedxafdi.supabase.co";
+    const SUPABASE_ANON_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImlndXNwamZvcnp5bmRlZHhhZmRpIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTE2MDc5MzksImV4cCI6MjA2NzE4MzkzOX0.h_OF0GcsaXPJm7OuuA3fCz4FaXV3_VBXG_WLr0zafVE";
+
     const student = JSON.parse(localStorage.getItem("activeStudent")) || {};
     const currentTerm = localStorage.getItem("currentTerm") || "Term 2";
     const studentID = student.student_id;
