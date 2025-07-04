@@ -194,12 +194,17 @@
         return;
       }
 
-      let students = JSON.parse(localStorage.getItem("studentList")) || [];
-      if (students.some(s => s.student_id === id)) {
-        feedback.textContent = "⚠️ Student ID already exists.";
-        feedback.style.color = "crimson";
-        return;
-      }
+     async function addStudentToSupabase(student) {
+  const { data, error } = await supabase
+    .from("students")
+    .insert([student]);
+
+  if (error) {
+    alert("❌ Failed to save student: " + error.message);
+  } else {
+    alert("✅ Student saved to Supabase.");
+  }
+}
 
       students.push({
         student_id: id,
