@@ -4,7 +4,6 @@
   <meta charset="UTF-8" />
   <title>Student Enrollment | Nsuta Portal</title>
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
   <script>
     const activeUser = JSON.parse(localStorage.getItem("activeUser"));
     if (!sessionStorage.getItem("role") && activeUser?.role === "headteacher") {
@@ -122,203 +121,164 @@
     <tbody></tbody>
   </table>
 
-  <script>
-    const SUPABASE_URL = "https://iguspjforzyndedxafdi.supabase.co";
-    const SUPABASE_ANON_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImlndXNwamZvcnp5bmRlZHhhZmRpIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTE2MDc5MzksImV4cCI6MjA2NzE4MzkzOX0.h_OF0GcsaXPJm7OuuA3fCz4FaXV3_VBXG_WLr0zafVE";
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<script>
+  // ✅ Supabase Initialization
+  const supabase = supabase.createClient(
+    "https://iguspjforzyndedxafdi.supabase.co", // Replace with your actual URL
+    "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImlndXNwamZvcnp5bmRlZHhhZmRpIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTE2MDc5MzksImV4cCI6MjA2NzE4MzkzOX0.h_OF0GcsaXPJm7OuuA3fCz4FaXV3_VBXG_WLr0zafVE"                        // Replace with your anon key
+  );
 
-    let previewData = [];
+  // ✅ Live photo preview
+  document.getElementById("photoInput").addEventListener("input", e => {
+    const url = e.target.value.trim();
+    document.getElementById("previewImg").src = url || "assets/default-photo.png";
+  });
 
-    function previewCSV() {
-      const file = document.getElementById("csvFile").files[0];
-      const preview = document.getElementById("csvPreview");
-      const confirmBtn = document.getElementById("confirmBtn");
-      const uploadStatus = document.getElementById("uploadStatus");
+  // ✅ Add a single student
+  async function addStudent() {
+    const id = document.getElementById("idInput").value.trim();
+    const name = document.getElementById("nameInput").value.trim();
+    const cls = document.getElementById("classInput").value;
+    const gender = document.getElementById("genderInput").value;
+    const pin = document.getElementById("pinInput").value.trim();
+    const photo = document.getElementById("photoInput").value.trim();
+    const feedback = document.getElementById("feedback");
 
-      preview.innerHTML = "";
-      uploadStatus.textContent = "";
-      previewData = [];
-
-      if (!file) return alert("Please select a CSV file.");
-
-      const reader = new FileReader();
-      reader.onload = function (e) {
-        const lines = e.target.result.trim().split("\n");
-        const hasHeader = lines[0].toLowerCase().includes("id");
-        const startIndex = hasHeader ? 1 : 0;
-        let html = "<table><tr><th>ID</th><th>Name</th><th>Class</th><th>Gender</th><th>PIN</th></tr>";
-
-        for (let i = startIndex; i < lines.length; i++) {
-          const [id, name, cls, gender, pin] = lines[i].split(",").map(p => p?.trim());
-          if (id && name && cls && gender && /^\d{4}$/.test(pin)) {
-            const student = { student_id: id, full_name: name, class: cls, gender, pin };
-            previewData.push(student);
-            html += `<tr><td>${id}</td><td>${name}</td><td>${cls}</td><td>${gender}</td><td>${pin}</td></tr>`;
-          }
-        }
-
-        html += "</table>";
-        preview.innerHTML = html;
-        confirmBtn.style.display = previewData.length > 0 ? "inline-block" : "none";
-        if (previewData.length === 0) alert("⚠️ No valid student rows detected.");
-      };
-
-      reader.readAsText(file);
+    if (!id || !name || !cls || !gender || !/^\d{4}$/.test(pin)) {
+      feedback.textContent = "⚠️ Fill in all fields correctly. PIN must be 4 digits.";
+      feedback.style.color = "crimson";
+      return;
     }
 
-    function confirmUpload() {
-      if (previewData.length === 0) return;
-      let existing = JSON.parse(localStorage.getItem("studentList")) || [];
-      previewData = previewData.filter(p => !existing.some(e => e.student_id === p.student_id));
-      const updated = [...existing, ...previewData];
+    const student = {
+      student_id: id,
+      full_name: name,
+      class: cls,
+      gender,
+      pin,
+      photo: photo || "assets/default-photo.png"
+    };
 
-      localStorage.setItem("studentList", JSON.stringify(updated));
-      document.getElementById("uploadStatus").textContent = `✅ ${previewData.length} new students added.`;
-      document.getElementById("csvFile").value = "";
-      document.getElementById("csvPreview").innerHTML = "";
-      document.getElementById("confirmBtn").style.display = "none";
-      loadStudents();
-    }
+    const { data, error } = await supabase.from("students").insert([student]);
 
-    function addStudent() {
-  const id = document.getElementById("idInput").value.trim();
-  const name = document.getElementById("nameInput").value.trim();
-  const cls = document.getElementById("classInput").value;
-  const gender = document.getElementById("genderInput").value;
-  const pin = document.getElementById("pinInput").value.trim();
-  const photo = document.getElementById("photoInput").value.trim();
-  const feedback = document.getElementById("feedback");
-
-  if (!id || !name || !cls || !gender || !/^\d{4}$/.test(pin)) {
-    feedback.textContent = "⚠️ Fill in all fields correctly. PIN must be 4 digits.";
-    feedback.style.color = "crimson";
-    return;
-  }
-
-  // ✅ Place this here:
-  const student = {
-    student_id: id,
-    full_name: name,
-    class: cls,
-    gender,
-    pin,
-    photo: photo || "assets/default-photo.png"
-  };
-
-  addStudentToSupabase(student); // 👈 This sends it to Supabase
-
-  // Optional: Clear form and show feedback
-  document.getElementById("idInput").value = "";
-  document.getElementById("nameInput").value = "";
-  document.getElementById("classInput").value = "";
-  document.getElementById("genderInput").value = "";
-  document.getElementById("pinInput").value = "";
-  document.getElementById("photoInput").value = "";
-  document.getElementById("previewImg").src = "assets/default-photo.png";
-  feedback.textContent = "✅ Student added successfully.";
-  feedback.style.color = "green";
-}
-      
-
-     async function addStudentToSupabase(student) {
-  const { data, error } = await supabase
-    .from("students")
-    .insert([student]);
-
-  if (error) {
-    alert("❌ Failed to save student: " + error.message);
-  } else {
-    alert("✅ Student saved to Supabase.");
-  }
-}
-
-      students.push({
-        student_id: id,
-        full_name: name,
-        class: cls,
-        gender,
-        pin,
-        photo: photo || "assets/default-photo.png"
-      });
-
-      localStorage.setItem("studentList", JSON.stringify(students));
-      loadStudents();
-
+    if (error) {
+      feedback.textContent = "❌ Failed to save student: " + error.message;
+      feedback.style.color = "crimson";
+    } else {
+      feedback.textContent = "✅ Student added successfully.";
+      feedback.style.color = "green";
+      loadStudents(); // Refresh table
+      // Clear form
       document.getElementById("idInput").value = "";
       document.getElementById("nameInput").value = "";
       document.getElementById("classInput").value = "";
       document.getElementById("genderInput").value = "";
-      document.getElementById("pinInput").      document.getElementById("pinInput").value = "";
+      document.getElementById("pinInput").value = "";
       document.getElementById("photoInput").value = "";
       document.getElementById("previewImg").src = "assets/default-photo.png";
-      feedback.textContent = "✅ Student added successfully.";
-      feedback.style.color = "green";
+    }
+  }
+
+  // ✅ Load all students into table
+  async function loadStudents() {
+    const { data, error } = await supabase.from("students").select("*").order("created_at", { ascending: false });
+    const tbody = document.querySelector("#studentTable tbody");
+    tbody.innerHTML = "";
+
+    if (error) {
+      tbody.innerHTML = "<tr><td colspan='6'>❌ Failed to load students.</td></tr>";
+      return;
     }
 
-    document.getElementById("photoInput").addEventListener("input", e => {
-      const url = e.target.value.trim();
-      document.getElementById("previewImg").src = url || "assets/default-photo.png";
+    data.forEach(s => {
+      tbody.innerHTML += `
+        <tr>
+          <td>${s.student_id}</td>
+          <td>${s.full_name}</td>
+          <td>${s.class}</td>
+          <td>${s.gender}</td>
+          <td>${s.pin}</td>
+          <td><button class="action-btn" onclick="deleteStudent('${s.student_id}')">Delete</button></td>
+        </tr>`;
     });
+  }
 
-    function loadStudents() {
-      const students = JSON.parse(localStorage.getItem("studentList")) || [];
-      const tbody = document.querySelector("#studentTable tbody");
-      tbody.innerHTML = "";
+  // ✅ Delete student
+  async function deleteStudent(studentId) {
+    if (!confirm("Are you sure you want to delete this student?")) return;
+    await supabase.from("students").delete().eq("student_id", studentId);
+    loadStudents();
+  }
 
-      students.forEach((s, index) => {
-        const row = document.createElement("tr");
-        row.innerHTML = `
-          <td><input value="${s.student_id}" onchange="editStudent(${index}, 'student_id', this.value)" /></td>
-          <td><input value="${s.full_name}" onchange="editStudent(${index}, 'full_name', this.value)" /></td>
-          <td>
-            <select onchange="editStudent(${index}, 'class', this.value)">
-              <option ${s.class === "JHS1" ? "selected" : ""}>JHS1</option>
-              <option ${s.class === "JHS2" ? "selected" : ""}>JHS2</option>
-              <option ${s.class === "JHS3" ? "selected" : ""}>JHS3</option>
-            </select>
-          </td>
-          <td>
-            <select onchange="editStudent(${index}, 'gender', this.value)">
-              <option ${s.gender === "Male" ? "selected" : ""}>Male</option>
-              <option ${s.gender === "Female" ? "selected" : ""}>Female</option>
-            </select>
-          </td>
-          <td><input value="${s.pin || ''}" onchange="editStudent(${index}, 'pin', this.value)" /></td>
-          <td><button class="action-btn" onclick="removeStudent(${index})">Remove</button></td>
-        `;
-        tbody.appendChild(row);
+  // ✅ Preview CSV
+  function previewCSV() {
+    const file = document.getElementById("csvFile").files[0];
+    if (!file) return alert("Please select a CSV file.");
+    const reader = new FileReader();
+    reader.onload = function (e) {
+      const lines = e.target.result.split("\n").filter(Boolean);
+      const preview = document.getElementById("csvPreview");
+      preview.innerHTML = "<table><tr><th>ID</th><th>Name</th><th>Class</th><th>Gender</th><th>PIN</th></tr>";
+      lines.forEach(line => {
+        const [id, name, cls, gender, pin] = line.split(",");
+        preview.innerHTML += `<tr><td>${id}</td><td>${name}</td><td>${cls}</td><td>${gender}</td><td>${pin}</td></tr>`;
       });
-    }
+      preview.innerHTML += "</table>";
+      document.getElementById("confirmBtn").style.display = "inline-block";
+    };
+    reader.readAsText(file);
+  }
 
-    function editStudent(index, key, value) {
-      const students = JSON.parse(localStorage.getItem("studentList")) || [];
-      students[index][key] = value;
-      localStorage.setItem("studentList", JSON.stringify(students));
-    }
-
-    function removeStudent(index) {
-      const students = JSON.parse(localStorage.getItem("studentList")) || [];
-      students.splice(index, 1);
-      localStorage.setItem("studentList", JSON.stringify(students));
-      loadStudents();
-    }
-
-    function exportStudents() {
-      const students = JSON.parse(localStorage.getItem("studentList")) || [];
-      if (students.length === 0) return alert("No student data available.");
-
-      let csvContent = "ID,Name,Class,Gender,PIN\n";
-      students.forEach(s => {
-        csvContent += `${s.student_id},${s.full_name},${s.class},${s.gender},${s.pin || ""}\n`;
+  // ✅ Confirm CSV Upload
+  async function confirmUpload() {
+    const file = document.getElementById("csvFile").files[0];
+    if (!file) return;
+    const reader = new FileReader();
+    reader.onload = async function (e) {
+      const lines = e.target.result.split("\n").filter(Boolean);
+      const students = lines.map(line => {
+        const [id, name, cls, gender, pin] = line.split(",");
+        return {
+          student_id: id.trim(),
+          full_name: name.trim(),
+          class: cls.trim(),
+          gender: gender.trim(),
+          pin: pin.trim(),
+          photo: "assets/default-photo.png"
+        };
       });
 
-      const blob = new Blob([csvContent], { type: "text/csv;charset=utf-8;" });
-      const link = document.createElement("a");
-      link.href = URL.createObjectURL(blob);
-      link.download = "Nsuta_Student_List.csv";
-      link.click();
-    }
+      const { error } = await supabase.from("students").insert(students);
+      const status = document.getElementById("uploadStatus");
+      if (error) {
+        status.textContent = "❌ Upload failed: " + error.message;
+        status.style.color = "crimson";
+      } else {
+        status.textContent = "✅ Students uploaded successfully.";
+        status.style.color = "green";
+        loadStudents();
+      }
+    };
+    reader.readAsText(file);
+  }
 
-    window.onload = loadStudents;
-  </script>
+  // ✅ Export students as CSV
+  async function exportStudents() {
+    const { data, error } = await supabase.from("students").select("*");
+    if (error || !data.length) return alert("❌ No data to export.");
+    const csv = data.map(s => `${s.student_id},${s.full_name},${s.class},${s.gender},${s.pin}`).join("\n");
+    const blob = new Blob([csv], { type: "text/csv" });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement("a");
+    a.href = url;
+    a.download = "students.csv";
+    a.click();
+    URL.revokeObjectURL(url);
+  }
+
+  // ✅ Load students on page load
+  loadStudents();
+</script>
 </body>
 </html>
