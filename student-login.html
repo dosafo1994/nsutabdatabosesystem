@@ -4,6 +4,14 @@
   <meta charset="UTF-8" />
   <title>Student Login</title>
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+  <script>
+    // ✅ Initialize Supabase
+    const supabase = window.supabase.createClient(
+      "https://iguspjforzyndedxafdi.supabase.co", // 🔁 Replace with your actual Supabase URL
+      "your-anon-key"                              // 🔁 Replace with your actual anon key
+    );
+  </script>
   <style>
     body {
       font-family: Arial, sans-serif;
@@ -73,10 +81,11 @@
   </div>
 
   <script>
-    function loginStudent() {
+    async function loginStudent() {
       const id = document.getElementById("idInput").value.trim();
       const pin = document.getElementById("pinInput").value.trim();
       const feedback = document.getElementById("feedback");
+
       feedback.textContent = "";
       feedback.className = "feedback";
 
@@ -92,34 +101,29 @@
         return;
       }
 
-    async function loginStudent() {
-  const id = document.getElementById("studentId").value.trim();
-  const pin = document.getElementById("pin").value.trim();
-  const feedback = document.getElementById("feedback");
+      const { data, error } = await supabase
+        .from("Enrollment") // ✅ Make sure this matches your actual table name
+        .select("*")
+        .eq("student_id", id)
+        .eq("pin", pin)
+        .single();
 
-  const { data, error } = await supabase
-    .from("students")
-    .select("*")
-    .eq("student_id", id)
-    .eq("pin", pin)
-    .single();
+      if (error || !data) {
+        console.error("Login error:", error);
+        feedback.textContent = "❌ Invalid ID or PIN.";
+        feedback.classList.add("error");
+        return;
+      }
 
-  if (error || !data) {
-    feedback.textContent = "❌ Invalid ID or PIN.";
-    feedback.style.color = "crimson";
-    return;
-  }
-
-  localStorage.setItem("activeStudent", JSON.stringify(data));
-  sessionStorage.setItem("role", "student");
-  window.location.href = "student-dashboard.html";
-} 
-
-      localStorage.setItem("activeStudent", JSON.stringify(match));
-      feedback.textContent = `✅ Welcome ${match.full_name}`;
+      // ✅ Save session and redirect
+      localStorage.setItem("activeStudent", JSON.stringify(data));
+      sessionStorage.setItem("role", "student");
+      feedback.textContent = `✅ Welcome ${data.full_name}`;
       feedback.classList.add("success");
 
-      setTimeout(() => window.location.href = "student-dashboard.html", 1000);
+      setTimeout(() => {
+        window.location.href = "student-dashboard.html";
+      }, 1000);
     }
   </script>
 </body>
