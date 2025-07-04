@@ -103,6 +103,26 @@
   </form>
 
   <script>
+    async function submitScores(subject, className, scoresObject) {
+  const teacher = JSON.parse(localStorage.getItem("activeUser")) || {};
+  const term = localStorage.getItem("currentTerm") || "Term 2";
+
+  const { data, error } = await supabase
+    .from("scores")
+    .insert([{
+      teacher_id: teacher.phone,
+      subject,
+      class: className,
+      term,
+      scores_data: scoresObject
+    }]);
+
+  if (error) {
+    alert("❌ Failed to submit scores: " + error.message);
+  } else {
+    alert("✅ Scores submitted successfully.");
+  }
+}
     const user = JSON.parse(localStorage.getItem("activeUser")) || {};
     const classes = user.classes || [];
     const subjects = user.subjects || [];
