@@ -214,6 +214,28 @@
   </div>
 
   <script>
+    async function postAssignment() {
+  const subject = document.getElementById("assignSubject").value;
+  const className = document.getElementById("assignClass").value;
+  const content = document.getElementById("assignText").value.trim();
+  const term = localStorage.getItem("currentTerm") || "Term 2";
+
+  if (!subject || !className || !content) {
+    alert("⚠️ Please fill in all fields.");
+    return;
+  }
+
+  const { data, error } = await supabase
+    .from("assignments")
+    .insert([{ subject, class: className, term, content }]);
+
+  if (error) {
+    alert("❌ Failed to post assignment: " + error.message);
+  } else {
+    alert("✅ Assignment posted successfully.");
+    document.getElementById("assignText").value = "";
+  }
+}
     const SUPABASE_URL = "https://iguspjforzyndedxafdi.supabase.co";
      const SUPABASE_ANON_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImlndXNwamZvcnp5bmRlZHhhZmRpIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTE2MDc5MzksImV4cCI6MjA2NzE4MzkzOX0.h_OF0GcsaXPJm7OuuA3fCz4FaXV3_VBXG_WLr0zafVE";
 
