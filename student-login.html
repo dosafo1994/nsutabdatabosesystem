@@ -92,14 +92,28 @@
         return;
       }
 
-      const students = JSON.parse(localStorage.getItem("studentList")) || [];
-      const match = students.find(s => s.student_id === id && s.pin === pin);
+    async function loginStudent() {
+  const id = document.getElementById("studentId").value.trim();
+  const pin = document.getElementById("pin").value.trim();
+  const feedback = document.getElementById("feedback");
 
-      if (!match) {
-        feedback.textContent = "❌ Invalid ID or PIN.";
-        feedback.classList.add("error");
-        return;
-      }
+  const { data, error } = await supabase
+    .from("students")
+    .select("*")
+    .eq("student_id", id)
+    .eq("pin", pin)
+    .single();
+
+  if (error || !data) {
+    feedback.textContent = "❌ Invalid ID or PIN.";
+    feedback.style.color = "crimson";
+    return;
+  }
+
+  localStorage.setItem("activeStudent", JSON.stringify(data));
+  sessionStorage.setItem("role", "student");
+  window.location.href = "student-dashboard.html";
+} 
 
       localStorage.setItem("activeStudent", JSON.stringify(match));
       feedback.textContent = `✅ Welcome ${match.full_name}`;
