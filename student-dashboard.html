@@ -159,6 +159,34 @@
   </div>
 
   <script>
+    async function loadAssignments() {
+  const student = JSON.parse(localStorage.getItem("activeStudent")) || {};
+  const term = localStorage.getItem("currentTerm") || "Term 2";
+  const list = document.getElementById("assignmentList");
+  list.innerHTML = "";
+
+  const { data, error } = await supabase
+    .from("assignments")
+    .select("*")
+    .eq("class", student.class)
+    .eq("term", term);
+
+  if (error) {
+    list.innerHTML = "<p>❌ Failed to load assignments.</p>";
+    return;
+  }
+
+  if (data.length === 0) {
+    list.innerHTML = "<p>No assignments posted yet for this term.</p>";
+    return;
+  }
+
+  data.forEach(a => {
+    list.innerHTML += `<div class="assignment-box">
+      <strong>${a.subject}:</strong> ${a.content}
+    </div>`;
+  });
+}
     const SUPABASE_URL = "https://iguspjforzyndedxafdi.supabase.co";
     const SUPABASE_ANON_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImlndXNwamZvcnp5bmRlZHhhZmRpIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTE2MDc5MzksImV4cCI6MjA2NzE4MzkzOX0.h_OF0GcsaXPJm7OuuA3fCz4FaXV3_VBXG_WLr0zafVE";
 
