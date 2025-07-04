@@ -146,8 +146,20 @@
       </div>
     </div>
   </div>
+  <button onclick="testSupabaseConnection()">🔌 Test Supabase Connection</button>
 
   <script>
+    async function testSupabaseConnection() {
+  const { data, error } = await supabase.from("assignments").select("*").limit(1);
+
+  if (error) {
+    console.error("❌ Supabase connection failed:", error.message);
+    alert("❌ Supabase is NOT connected.");
+  } else {
+    console.log("✅ Supabase connected. Sample data:", data);
+    alert("✅ Supabase is connected and working!");
+  }
+}
     async function loadScoreStatus() {
   const term = document.getElementById("termFilter").value;
   const box = document.getElementById("scoreStatusBox");
