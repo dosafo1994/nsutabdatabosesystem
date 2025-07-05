@@ -126,7 +126,7 @@
     <span class="eye-icon" onclick="togglePin('newPin')">👁️</span>
   </div>
 
-  <button onclick="updateProfile()">Save Changes</button>
+  <button id="saveBtn" onclick="updateProfile()" disabled>Save Changes</button>
 
   <div id="statusBox"></div>
 
@@ -140,10 +140,11 @@
       "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImlndXNwamZvcnp5bmRlZHhhZmRpIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTE2MDc5MzksImV4cCI6MjA2NzE4MzkzOX0.h_OF0GcsaXPJm7OuuA3fCz4FaXV3_VBXG_WLr0zafVE"
     );
 
-    let head = null;
+    let profile = null;
 
     async function loadProfile() {
       const phone = sessionStorage.getItem("username");
+
       if (!phone) {
         alert("Session expired. Please log in again.");
         window.location.href = "login.html";
@@ -151,29 +152,42 @@
       }
 
       const { data, error } = await supabase
-        .from("Teacher")
+        .from("profile")
         .select("*")
         .eq("phone", phone)
         .eq("role", "headteacher")
-        .single();
+        .maybeSingle();
 
-      if (error || !data) {
-        alert("Failed to load profile.");
+      if (error) {
+        console.error("❌ Supabase error:", error);
+        alert("Error loading profile. Please try again.");
         return;
       }
 
-      head = data;
-      document.getElementById("name").value = head.full_name || "";
-      document.getElementById("phone").value = head.phone || "";
+      if (!data) {
+        alert("No headteacher profile found for this phone number.");
+        return;
+      }
+
+      profile = data;
+      document.getElementById("name").value = profile.full_name || "";
+      document.getElementById("phone").value = profile.phone || "";
+      document.getElementById("saveBtn").disabled = false;
     }
 
     async function updateProfile() {
+      const statusBox = document.getElementById("statusBox");
+      statusBox.innerHTML = "";
+
+      if (!profile) {
+        statusBox.innerHTML = `<div class="status error">❌ Profile not loaded. Please refresh the page.</div>`;
+        return;
+      }
+
       const newName = document.getElementById("name").value.trim();
       const newPhone = document.getElementById("phone").value.trim();
       const oldPin = document.getElementById("oldPin").value.trim();
       const newPin = document.getElementById("newPin").value.trim();
-      const statusBox = document.getElementById("statusBox");
-      statusBox.innerHTML = "";
 
       if (!newName || !newPhone) {
         statusBox.innerHTML = `<div class="status error">⚠️ Please enter name and phone number.</div>`;
@@ -185,8 +199,21 @@
         return;
       }
 
-      if (oldPin && head.pin !== oldPin) {
+      if (oldPin && profile.pin !== oldPin) {
         statusBox.innerHTML = `<div class="status error">❌ Current PIN incorrect. Change not authorized.</div>`;
+        return;
+      }
+
+      // Check for duplicate phone number
+      const { data: existing } = await supabase
+        .from("profile")
+        .select("id")
+        .eq("phone", newPhone)
+        .neq("id", profile.id)
+        .maybeSingle();
+
+      if (existing) {
+        statusBox.innerHTML = `<div class="status error">⚠️ That phone number is already in use by another profile.</div>`;
         return;
       }
 
@@ -198,9 +225,9 @@
       if (newPin) updateData.pin = newPin;
 
       const { error } = await supabase
-        .from("Teacher")
+        .from("profile")
         .update(updateData)
-        .eq("id", head.id);
+        .eq("id", profile.id);
 
       if (error) {
         statusBox.innerHTML = `<div class="status error">❌ Failed to update profile: ${error.message}</div>`;
