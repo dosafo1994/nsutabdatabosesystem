@@ -4,6 +4,7 @@
   <meta charset="UTF-8" />
   <title>Exam Score Entry</title>
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
   <style>
     body {
       font-family: Arial;
@@ -55,6 +56,7 @@
       color: white;
       border: none;
       border-radius: 5px;
+      cursor: pointer;
     }
 
     button:hover {
@@ -92,29 +94,15 @@
       <tbody></tbody>
     </table>
     <button type="submit">💾 Save Exam Scores</button>
+    <button type="button" onclick="submitToSupabase()">📤 Submit to Supabase</button>
   </form>
 
   <script>
-    async function submitScores(subject, className, scoresObject) {
-  const teacher = JSON.parse(localStorage.getItem("activeUser")) || {};
-  const term = localStorage.getItem("currentTerm") || "Term 2";
+    const supabase = window.supabase.createClient(
+      "https://iguspjforzyndedxafdi.supabase.co",
+      "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9..." // Replace with your actual anon key
+    );
 
-  const { data, error } = await supabase
-    .from("scores")
-    .insert([{
-      teacher_id: teacher.phone,
-      subject,
-      class: className,
-      term,
-      scores_data: scoresObject
-    }]);
-
-  if (error) {
-    alert("❌ Failed to submit scores: " + error.message);
-  } else {
-    alert("✅ Scores submitted successfully.");
-  }
-}
     const user = JSON.parse(localStorage.getItem("activeUser")) || {};
     const classes = user.classes || [];
     const subjects = user.subjects || [];
@@ -238,11 +226,45 @@
       localStorage.setItem(key, JSON.stringify(saved));
     }
 
+    async function submitToSupabase() {
+      const cls = classSelect.value;
+      const sub = subjectSelect.value;
+      const key = `exam_${cls}_${sub}`;
+      const saved = JSON.parse(localStorage.getItem(key)) || [];
+
+      if (saved.length === 0) {
+        alert("⚠️ No saved scores to submit.");
+        return;
+      }
+
+      const teacher = JSON.parse(localStorage.getItem("activeUser")) || {};
+      const term = localStorage.getItem("currentTerm") || "Term 2";
+
+      const payload = saved.map(s => ({
+        teacher_id: teacher.id,
+        teacher_name: teacher.full_name,
+        student_id: s.student_id,
+        student_name: s.full_name,
+        class: s.class,
+        subject: s.subject,
+        term,
+        score: s.raw
+      }));
+
+      const { error } = await supabase.from("examscore").insert(payload);
+
+      if (error) {
+        alert("❌ Failed to sync scores: " + error.message);
+      } else {
+        alert("✅ Scores submitted to Supabase successfully.");
+      }
+    }
+
     window.onload = () => {
       classSelect.value = sessionStorage.getItem("launchClass") || "";
       subjectSelect.value = sessionStorage.getItem("launchSubject") || "";
       sessionStorage.removeItem("launchClass");
-      sessionStorage.removeItem("launchSubject");
+            sessionStorage.removeItem("launchSubject");
     };
   </script>
 </body>
