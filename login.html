@@ -89,50 +89,77 @@
     );
 
     async function login() {
-      const phone = document.getElementById("phone").value.trim();
-      const pin = document.getElementById("pin").value.trim();
-      const feedbackBox = document.getElementById("feedbackBox");
+  const phone = document.getElementById("phone").value.trim();
+  const pin = document.getElementById("pin").value.trim();
+  const feedbackBox = document.getElementById("feedbackBox");
 
-      feedbackBox.textContent = "";
-      feedbackBox.className = "feedback";
+  feedbackBox.textContent = "";
+  feedbackBox.className = "feedback";
 
-      if (!phone || !pin) {
-        feedbackBox.textContent = "⚠️ Please fill in both fields.";
-        feedbackBox.classList.add("error");
-        return;
-      }
+  if (!phone || !pin) {
+    feedbackBox.textContent = "⚠️ Please fill in both fields.";
+    feedbackBox.classList.add("error");
+    return;
+  }
 
-      const { data: user, error } = await supabase
-        .from("profile")
-        .select("*")
-        .eq("phone", phone)
-        .eq("pin", pin)
-        .eq("role", "headteacher")
-        .maybeSingle();
+  if (!/^\d{4}$/.test(pin)) {
+    feedbackBox.textContent = "⚠️ PIN must be a 4-digit number.";
+    feedbackBox.classList.add("error");
+    return;
+  }
 
-      if (error || !user) {
-        feedbackBox.textContent = "❌ Invalid phone or PIN.";
-        feedbackBox.classList.add("error");
-        return;
-      }
+  // 🔍 First check in the profile table (headteachers)
+  const { data: headteacher, error: headErr } = await supabase
+    .from("profile")
+    .select("*")
+    .eq("phone", phone)
+    .eq("pin", pin)
+    .eq("role", "headteacher")
+    .maybeSingle();
 
-      // ✅ Store session
-      sessionStorage.setItem("username", user.phone);
-      sessionStorage.setItem("displayName", user.full_name);
-      sessionStorage.setItem("role", user.role);
-      localStorage.setItem("activeUser", JSON.stringify({
-        username: user.phone,
-        displayName: user.full_name,
-        role: user.role
-      }));
+  if (headteacher) {
+    sessionStorage.setItem("username", headteacher.phone);
+    sessionStorage.setItem("displayName", headteacher.full_name);
+    sessionStorage.setItem("role", headteacher.role);
+    localStorage.setItem("activeUser", JSON.stringify(headteacher));
 
-      feedbackBox.textContent = `✅ Logged in as ${user.role}`;
-      feedbackBox.classList.add("success");
+    feedbackBox.textContent = "✅ Logged in as HEADTEACHER";
+    feedbackBox.classList.add("success");
 
-      setTimeout(() => {
-        window.location.href = "dashboard.html";
-      }, 800);
-    }
+    setTimeout(() => {
+      window.location.href = "dashboard.html";
+    }, 800);
+    return;
+  }
+
+  // 🔍 Then check in the Teacher table
+  const { data: teacher, error: teacherErr } = await supabase
+    .from("Teacher")
+    .select("*")
+    .eq("phone", phone)
+    .eq("pin", pin)
+    .maybeSingle();
+
+  if (teacher) {
+    sessionStorage.setItem("username", teacher.phone);
+    sessionStorage.setItem("displayName", teacher.full_name);
+    sessionStorage.setItem("role", teacher.role);
+    sessionStorage.setItem("teacher", JSON.stringify(teacher));
+    localStorage.setItem("activeUser", JSON.stringify(teacher));
+
+    feedbackBox.textContent = `✅ Logged in as TEACHER`;
+    feedbackBox.classList.add("success");
+
+    setTimeout(() => {
+      window.location.href = "teacher-dashboard.html";
+    }, 800);
+    return;
+  }
+
+  // ❌ If neither found
+  feedbackBox.textContent = "❌ Invalid phone or PIN.";
+  feedbackBox.classList.add("error");
+}
   </script>
 </body>
 </html>
