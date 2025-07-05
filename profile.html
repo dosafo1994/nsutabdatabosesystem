@@ -204,33 +204,20 @@
         return;
       }
 
-      // Check for duplicate phone number
-      const { data: existing } = await supabase
-        .from("profile")
-        .select("id")
-        .eq("phone", newPhone)
-        .neq("id", profile.id)
-        .maybeSingle();
-
-      if (existing) {
-        statusBox.innerHTML = `<div class="status error">⚠️ That phone number is already in use by another profile.</div>`;
-        return;
-      }
-
-      const updateData = {
+      const updatedProfile = {
+        id: profile.id,
         full_name: newName,
-        phone: newPhone
+        phone: newPhone,
+        pin: newPin || profile.pin,
+        role: "headteacher"
       };
-
-      if (newPin) updateData.pin = newPin;
 
       const { error } = await supabase
         .from("profile")
-        .update(updateData)
-        .eq("id", profile.id);
+        .upsert(updatedProfile, { onConflict: "id" });
 
       if (error) {
-        statusBox.innerHTML = `<div class="status error">❌ Failed to update profile: ${error.message}</div>`;
+        statusBox.innerHTML = `<div class="status error">❌ Failed to overwrite profile: ${error.message}</div>`;
         return;
       }
 
