@@ -134,7 +134,7 @@
       return Array.from(document.querySelectorAll(`#${groupId} input:checked`)).map(b => b.value.trim());
     }
 
-    async function saveTeacher() {
+    window.saveTeacher = async function() {
       const name = document.getElementById("nameInput").value.trim();
       const phone = document.getElementById("phoneInput").value.trim();
       const pin = document.getElementById("pinInput").value.trim();
