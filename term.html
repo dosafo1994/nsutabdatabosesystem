@@ -97,21 +97,69 @@
 
   <div class="status" id="statusBox">Loading current term...</div>
 
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
   <script>
-    const termData = JSON.parse(localStorage.getItem("schoolTerm")) || {
-      term: "Term 1",
-      year: "2025",
-      isPromotion: false
-    };
+    const supabase = window.supabase.createClient(
+      "https://iguspjforzyndedxafdi.supabase.co",
+      "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImlndXNwamZvcnp5bmRlZHhhZmRpIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTE2MDc5MzksImV4cCI6MjA2NzE4MzkzOX0.h_OF0GcsaXPJm7OuuA3fCz4FaXV3_VBXG_WLr0zafVE" // Replace with your actual anon key
+    );
 
-    document.getElementById("term").value = termData.term;
-    document.getElementById("year").value = termData.year;
-    document.getElementById("promotion").value = termData.isPromotion ? "true" : "false";
+    const activeUser = JSON.parse(localStorage.getItem("activeUser")) || {};
+    const termInput = document.getElementById("term");
+    const yearInput = document.getElementById("year");
+    const promoInput = document.getElementById("promotion");
+    const statusBox = document.getElementById("statusBox");
 
-    function saveTerm() {
-      const newTerm = document.getElementById("term").value;
-      const newYear = document.getElementById("year").value.trim();
-      const isPromotion = document.getElementById("promotion").value === "true";
+    async function loadTermFromSupabase() {
+      const { data, error } = await supabase
+        .from("term_settings")
+        .select("*")
+        .order("updated_at", { ascending: false })
+        .limit(1)
+        .maybeSingle();
+
+      if (error) {
+        statusBox.textContent = "⚠️ Failed to load from Supabase. Using local fallback.";
+        loadFromLocal();
+        return;
+      }
+
+      if (data) {
+        termInput.value = data.term;
+        yearInput.value = data.year;
+        promoInput.value = data.is_promotion ? "true" : "false";
+
+        const localCopy = {
+          term: data.term,
+          year: data.year,
+          isPromotion: data.is_promotion
+        };
+        localStorage.setItem("schoolTerm", JSON.stringify(localCopy));
+
+        statusBox.textContent = `📌 Current Term: ${data.term}, Year: ${data.year}, Promotion: ${data.is_promotion ? "Yes" : "No"}`;
+      } else {
+        statusBox.textContent = "⚠️ No term settings found. Please save one.";
+      }
+    }
+
+    function loadFromLocal() {
+      const termData = JSON.parse(localStorage.getItem("schoolTerm")) || {
+        term: "Term 1",
+        year: "2025",
+        isPromotion: false
+      };
+
+      termInput.value = termData.term;
+      yearInput.value = termData.year;
+      promoInput.value = termData.isPromotion ? "true" : "false";
+
+      statusBox.textContent = `📌 Current Term (Local): ${termData.term}, Year: ${termData.year}, Promotion: ${termData.isPromotion ? "Yes" : "No"}`;
+    }
+
+    async function saveTerm() {
+      const newTerm = termInput.value;
+      const newYear = yearInput.value.trim();
+      const isPromotion = promoInput.value === "true";
 
       if (!newYear) {
         alert("Please enter the academic year.");
@@ -121,17 +169,29 @@
       const updated = {
         term: newTerm,
         year: newYear,
-        isPromotion
+        is_promotion: isPromotion,
+        updated_by: activeUser?.username || "unknown"
       };
 
-      localStorage.setItem("schoolTerm", JSON.stringify(updated));
-      document.getElementById("statusBox").textContent = 
-        `✅ Settings saved: ${newTerm} | ${newYear} | Promotion: ${isPromotion ? "Yes" : "No"}`;
+      // Save to localStorage
+      localStorage.setItem("schoolTerm", JSON.stringify({
+        term: newTerm,
+        year: newYear,
+        isPromotion
+      }));
+
+      // Save to Supabase
+      const { error } = await supabase.from("term_settings").upsert([updated]);
+
+      if (error) {
+        statusBox.textContent = "❌ Failed to save to Supabase: " + error.message;
+        return;
+      }
+
+      statusBox.textContent = `✅ Settings saved: ${newTerm} | ${newYear} | Promotion: ${isPromotion ? "Yes" : "No"}`;
     }
 
-    // Initial status display
-    document.getElementById("statusBox").textContent = 
-      `Current Term: ${termData.term}, Year: ${termData.year}, Promotion: ${termData.isPromotion ? "Yes" : "No"}`;
+    window.onload = loadTermFromSupabase;
   </script>
 </body>
 </html>
