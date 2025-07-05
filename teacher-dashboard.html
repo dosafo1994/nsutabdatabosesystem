@@ -6,6 +6,7 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
   <style>
+    /* [Your original styles preserved here] */
     body {
       font-family: Arial, sans-serif;
       background: #f0f6ff;
@@ -13,7 +14,6 @@
       max-width: 1000px;
       margin: auto;
     }
-
     .header {
       display: flex;
       justify-content: space-between;
@@ -23,13 +23,11 @@
       border-radius: 8px;
       margin-bottom: 20px;
     }
-
     h1 {
       font-size: 22px;
       margin: 0;
       color: #0077cc;
     }
-
     .section {
       background: white;
       border: 1px solid #ccc;
@@ -37,12 +35,10 @@
       border-radius: 10px;
       margin-bottom: 25px;
     }
-
     .section h3 {
       margin-top: 0;
       color: #0077cc;
     }
-
     button {
       background: #0077cc;
       color: white;
@@ -53,18 +49,15 @@
       cursor: pointer;
       margin: 6px 0;
     }
-
     button:hover {
       background: #005fa3;
     }
-
-    select, textarea {
+    select, textarea, input[type="file"] {
       width: 100%;
       padding: 8px;
       margin: 8px 0;
       font-size: 14px;
     }
-
     .logout-btn {
       background: #c0392b;
       color: white;
@@ -74,20 +67,16 @@
       cursor: pointer;
       border: none;
     }
-
     .logout-btn:hover {
       background: #992d22;
     }
-
     ul {
       list-style: none;
       padding-left: 10px;
     }
-
     li {
       margin-bottom: 5px;
     }
-
     .notification {
       background: #fff7dd;
       border-left: 6px solid orange;
@@ -95,16 +84,13 @@
       border-radius: 8px;
       margin-bottom: 20px;
     }
-
     .approved {
       background: #e6ffe6;
       border-left-color: green;
     }
-
     .pending {
       border-left-color: orange;
     }
-
     .not-submitted {
       background: #f0f0f0;
       border-left-color: #ccc;
@@ -149,59 +135,60 @@
   </div>
 
   <div class="section">
-  <h3>✍️ Prepare Exam Questions</h3>
+    <h3>✍️ Prepare Exam Questions</h3>
 
-  <label>Exam Type:</label>
-  <select id="qExamType">
-    <option value="Mid Term">Mid Term</option>
-    <option value="End of Term">End of Term</option>
-  </select>
+    <label>Exam Type:</label>
+    <select id="typeSelect">
+      <option value="Mid Term">Mid Term</option>
+      <option value="End of Term">End of Term</option>
+    </select>
 
-  <label>Academic Term:</label>
-  <select id="qTerm">
-    <option value="Term 1">Term 1</option>
-    <option value="Term 2">Term 2</option>
-    <option value="Term 3">Term 3</option>
-  </select>
+    <label>Academic Term:</label>
+    <select id="termSelect">
+      <option value="Term 1">Term 1</option>
+      <option value="Term 2">Term 2</option>
+      <option value="Term 3">Term 3</option>
+    </select>
 
-  <label>Subject:</label>
-  <select id="qSubject"><option value="">--Select Subject--</option></select>
+    <label>Subject:</label>
+    <select id="subjectSelect"><option value="">--Select Subject--</option></select>
 
-  <label>Class:</label>
-  <select id="qClass"><option value="">--Select Class--</option></select>
+    <label>Class:</label>
+    <select id="classSelect"><option value="">--Select Class--</option></select>
 
-  <label>Format:</label>
-  <select id="qFormat">
-    <option value="Essay">Essay</option>
-    <option value="Objective">Objective</option>
-  </select>
+    <label>Format:</label>
+    <select id="formatSelect">
+      <option value="Essay">Essay</option>
+      <option value="Objective">Objective</option>
+    </select>
 
-  <label>Exam Questions:</label>
-  <textarea id="qText" rows="6" placeholder="Type your questions here..."></textarea>
+    <label>Exam Questions:</label>
+    <textarea id="questionText" rows="6" placeholder="Type your questions here..."></textarea>
 
-  <label>Attach File (optional):</label>
-  <input type="file" id="qFile" accept=".pdf,image/*" />
+    <label>Attach File (optional):</label>
+    <input type="file" id="questionFile" accept=".pdf,image/*" />
 
-  <button onclick="saveExamDraft()">💾 Save Draft</button>
-  <button onclick="submitExamQuestions()">📤 Submit to Headteacher</button>
+    <button onclick="saveExamDraft()">💾 Save Draft</button>
+    <button onclick="submitExamQuestions()">📤 Submit to Headteacher</button>
 
-  <div id="qStatus" style="margin-top:10px; font-weight:bold;"></div>
-</div>
+    <div id="qStatus" style="margin-top:10px; font-weight:bold;"></div>
+  </div>
+
   <div class="section">
-  <h3>📚 Post Assignment</h3>
+    <h3>📚 Post Assignment</h3>
 
-  <label>Select Subject:</label>
-  <select id="assignSubject"><option value="">-- Select Subject --</option></select>
+    <label>Select Subject:</label>
+    <select id="assignSubject"><option value="">-- Select Subject --</option></select>
 
-  <label>Select Class:</label>
-  <select id="assignClass"><option value="">-- Select Class --</option></select>
+    <label>Select Class:</label>
+    <select id="assignClass"><option value="">-- Select Class --</option></select>
 
-  <label>Assignment Content:</label>
-  <textarea id="assignText" rows="5" placeholder="Type the assignment here..."></textarea>
+    <label>Assignment Content:</label>
+    <textarea id="assignText" rows="5" placeholder="Type the assignment here..."></textarea>
 
-  <button onclick="postAssignment()">📤 Submit Assignment</button>
-  <div id="assignStatus" style="margin-top:10px; font-weight:bold;"></div>
-</div>
+    <button onclick="postAssignment()">📤 Submit Assignment</button>
+    <div id="assignStatus" style="margin-top:10px; font-weight:bold;"></div>
+  </div>
 
   <div class="section">
     <h3>✏️ Enter SBA Scores</h3>
@@ -214,57 +201,136 @@
   </div>
 
   <script>
-    async function postAssignment() {
-  const subject = document.getElementById("assignSubject").value;
-  const className = document.getElementById("assignClass").value;
-  const content = document.getElementById("assignText").value.trim();
-  const term = localStorage.getItem("currentTerm") || "Term 2";
+    const teacher = JSON.parse(localStorage.getItem("activeUser")) || {};
+    const currentTerm = localStorage.getItem("currentTerm") || "Term 2";
 
-  if (!subject || !className || !content) {
-    alert("⚠️ Please fill in all fields.");
-    return;
-  }
-
-  const { data, error } = await supabase
-    .from("assignments")
-    .insert([{ subject, class: className, term, content }]);
-
-  if (error) {
-    alert("❌ Failed to post assignment: " + error.message);
-  } else {
-    alert("✅ Assignment posted successfully.");
-    document.getElementById("assignText").value = "";
-  }
-}
-    const SUPABASE_URL = "https://iguspjforzyndedxafdi.supabase.co";
-     const SUPABASE_ANON_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImlndXNwamZvcnp5bmRlZHhhZmRpIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTE2MDc5MzksImV4cCI6MjA2NzE4MzkzOX0.h_OF0GcsaXPJm7OuuA3fCz4FaXV3_VBXG_WLr0zafVE";
-
-
-    const activeUser = JSON.parse(localStorage.getItem("activeUser")) || {};
-    document.getElementById("displayName").textContent = activeUser.displayName || "Teacher";
-    document.getElementById("termInfo").textContent = "Academic Year: 2025 · Term 2";
-
+    const displayName = document.getElementById("displayName");
+    const termInfo = document.getElementById("termInfo");
     const assignedInfo = document.getElementById("assignedInfo");
-    (activeUser.subjects || []).forEach(subject => {
-      assignedInfo.innerHTML += `<li>📚 ${subject}</li>`;
-    });
-    (activeUser.classes || []).forEach(cls => {
-      assignedInfo.innerHTML += `<li>🏫 ${cls}</li>`;
-    });
-
     const previewSubject = document.getElementById("previewSubject");
     const previewClass = document.getElementById("previewClass");
-    (activeUser.subjects || []).forEach(sub => {
+    const subjectSelect = document.getElementById("subjectSelect");
+    const classSelect = document.getElementById("classSelect");
+    const assignSubject = document.getElementById("assignSubject");
+    const assignClass = document.getElementById("assignClass");
+    const assignText = document.getElementById("assignText");
+    const assignStatus = document.getElementById("assignStatus");
+    const questionText = document.getElementById("questionText");
+    const typeSelect = document.getElementById("typeSelect");
+    const termSelect = document.getElementById("termSelect");
+    const formatSelect = document.getElementById("formatSelect");
+    const qStatus = document.getElementById("qStatus");
+    const questionFile = document.getElementById("questionFile");
+
+    displayName.textContent = teacher.displayName || "Teacher";
+    termInfo.textContent = `Academic Year: 2025 · ${currentTerm}`;
+
+    (teacher.subjects || []).forEach(sub => {
+      assignedInfo.innerHTML += `<li>📚 ${sub}</li>`;
       previewSubject.innerHTML += `<option value="${sub}">${sub}</option>`;
+      subjectSelect.innerHTML += `<option value="${sub}">${sub}</option>`;
+      assignSubject.innerHTML += `<option value="${sub}">${sub}</option>`;
     });
-    (activeUser.classes || []).forEach(cls => {
+
+       (teacher.classes || []).forEach(cls => {
+      assignedInfo.innerHTML += `<li>🏫 ${cls}</li>`;
       previewClass.innerHTML += `<option value="${cls}">${cls}</option>`;
+      classSelect.innerHTML += `<option value="${cls}">${cls}</option>`;
+      assignClass.innerHTML += `<option value="${cls}">${cls}</option>`;
     });
 
     function logout() {
       sessionStorage.clear();
       localStorage.removeItem("activeUser");
-      window.location.href = "index.html";
+      window.location.href = "login.html";
+    }
+
+    function getExamKey() {
+      const sub = subjectSelect.value;
+      const cls = classSelect.value;
+      const type = typeSelect.value;
+      const term = termSelect.value;
+      return `${teacher.username}_${cls}_${sub}_${term}_${type}`;
+    }
+
+    function getAllInputs() {
+      return {
+        subject: subjectSelect.value,
+        class: classSelect.value,
+        type: typeSelect.value,
+        term: termSelect.value,
+        format: formatSelect.value,
+        text: questionText.value.trim()
+      };
+    }
+
+    function saveExamDraft() {
+      const { subject, class: cls, term, type, format, text } = getAllInputs();
+      if (!subject || !cls || !text) {
+        alert("❌ Fill all required fields.");
+        return;
+      }
+
+      if (term !== currentTerm) {
+        alert(`⚠️ You can only create questions for ${currentTerm}`);
+        return;
+      }
+
+      const key = getExamKey();
+      if (localStorage.getItem(key + "_status") === "Approved") {
+        alert("✅ Already approved. Editing locked.");
+        return;
+      }
+
+      localStorage.setItem(key + "_text", text);
+      localStorage.setItem(key + "_format", format);
+      localStorage.setItem(key + "_term", term);
+      qStatus.textContent = "💾 Draft saved";
+      qStatus.style.color = "blue";
+    }
+
+    function submitExamQuestions() {
+      const { subject, class: cls, term, type, text } = getAllInputs();
+      if (!subject || !cls || !text) {
+        alert("❌ Fill all required fields.");
+        return;
+      }
+
+      if (term !== currentTerm) {
+        alert(`⚠️ You can only submit for ${currentTerm}`);
+        return;
+      }
+
+      const key = getExamKey();
+      localStorage.setItem(key + "_text", text);
+      localStorage.setItem(key + "_status", "Pending");
+      qStatus.textContent = "📤 Submitted · Awaiting Approval";
+      qStatus.style.color = "orange";
+    }
+
+    function loadExamDraftStatus() {
+      const key = getExamKey();
+      const status = localStorage.getItem(key + "_status");
+      const text = localStorage.getItem(key + "_text");
+
+      if (text) questionText.value = text;
+
+      if (status === "Approved") {
+        qStatus.textContent = "✅ Approved by Headteacher";
+        qStatus.style.color = "green";
+        questionText.disabled = true;
+        typeSelect.disabled = true;
+        termSelect.disabled = true;
+        subjectSelect.disabled = true;
+        classSelect.disabled = true;
+        formatSelect.disabled = true;
+      } else if (status === "Pending") {
+        qStatus.textContent = "📤 Submitted · Awaiting Approval";
+        qStatus.style.color = "orange";
+      } else if (text) {
+        qStatus.textContent = "💾 Draft saved";
+        qStatus.style.color = "blue";
+      }
     }
 
     function previewScores() {
@@ -283,7 +349,7 @@
 
     function submitScores() {
       const submitted = JSON.parse(localStorage.getItem("submissionStatus")) || {};
-      const key = activeUser.username + "_submitted";
+      const key = teacher.username + "_submitted";
       submitted[key] = "Pending";
       localStorage.setItem("submissionStatus", JSON.stringify(submitted));
       alert("✅ Scores submitted for approval.");
@@ -292,14 +358,14 @@
 
     function loadSubmissionStatus() {
       const submitted = JSON.parse(localStorage.getItem("submissionStatus")) || {};
-      const key = activeUser.username + "_submitted";
+      const key = teacher.username + "_submitted";
       const status = submitted[key] || "Not Submitted";
       const statusList = document.getElementById("submissionStatus");
-      statusList.innerHTML = `<li>${status}</li>`;
-
       const message = document.getElementById("approvalMessage");
       const noticeBox = document.getElementById("approvalNotice");
-      noticeBox.classList.remove("approved", "pending", "not-submitted");
+
+      statusList.innerHTML = `<li>${status}</li>`;
+      noticeBox.className = "";
 
       if (status === "Approved") {
         message.textContent = "✅ Scores have been approved by Headteacher.";
@@ -313,159 +379,37 @@
       }
     }
 
-    function saveAssignment() {
-      const teacher = JSON.parse(localStorage.getItem("activeUser")) || {};
-const assignSubject = document.getElementById("assignSubject");
-const assignClass = document.getElementById("assignClass");
-const assignText = document.getElementById("assignText");
-const assignStatus = document.getElementById("assignStatus");
+    async function postAssignment() {
+      const subject = assignSubject.value;
+      const className = assignClass.value;
+      const content = assignText.value.trim();
+      const term = currentTerm;
 
-(teacher.subjects || []).forEach(s => assignSubject.innerHTML += `<option value="${s}">${s}</option>`);
-(teacher.classes || []).forEach(c => assignClass.innerHTML += `<option value="${c}">${c}</option>`);
+      if (!subject || !className || !content) {
+        alert("⚠️ Please fill in all fields.");
+        return;
+      }
 
-function postAssignment() {
-  const subject = assignSubject.value;
-  const className = assignClass.value;
-  const text = assignText.value.trim();
-  const term = localStorage.getItem("currentTerm") || "Term 2";
+      const key = `${subject}_${className}_assignment_${term}`;
+      localStorage.setItem(key, content);
 
-  if (!subject || !className || !text) {
-    alert("❌ Please complete all fields.");
-    return;
-  }
-
-  const key = `${subject}_${className}_assignment_${term}`;
-  localStorage.setItem(key, text);
-
-  assignStatus.textContent = "✅ Assignment posted.";
-  assignStatus.style.color = "green";
-  assignText.value = "";
-}
+      assignStatus.textContent = "✅ Assignment posted.";
+      assignStatus.style.color = "green";
+      assignText.value = "";
     }
 
-    function saveExamType() {
-      const type = document.getElementById("examType").value;
-      sessionStorage.setItem("examType", type);
-      alert(`✅ Set as ${type}`);
-    }
+    questionFile.addEventListener("change", e => {
+      const file = e.target.files[0];
+      if (!file) return;
+      const reader = new FileReader();
+      reader.onload = () => {
+        localStorage.setItem(getExamKey() + "_file", reader.result);
+        alert("📎 File attached successfully.");
+      };
+      reader.readAsDataURL(file);
+    });
 
-    window.onload = () => {
-  const teacher = JSON.parse(localStorage.getItem("activeUser")) || {};
-  const assignSubject = document.getElementById("assignSubject");
-  const assignClass = document.getElementById("assignClass");
-
-  assignSubject.innerHTML = "<option value=''>-- Select Subject --</option>";
-  assignClass.innerHTML = "<option value=''>-- Select Class --</option>";
-
-  (teacher.subjects || []).forEach(s => {
-    assignSubject.innerHTML += `<option value="${s}">${s}</option>`;
-  });
-
-  (teacher.classes || []).forEach(c => {
-    assignClass.innerHTML += `<option value="${c}">${c}</option>`;
-  });
-};
-
-function getExamKey() {
-  const sub = subjectSelect.value;
-  const cls = classSelect.value;
-  const type = typeSelect.value;
-  const term = termSelect.value;
-  return `${teacher.phone}_${cls}_${sub}_${term}_${type}`;
-}
-
-function getAllInputs() {
-  return {
-    subject: subjectSelect.value,
-    class: classSelect.value,
-    type: typeSelect.value,
-    term: termSelect.value,
-    format: formatSelect.value,
-    text: questionText.value.trim()
-  };
-}
-
-function saveExamDraft() {
-  const { subject, class: cls, term, type, format, text } = getAllInputs();
-  if (!subject || !cls || !text) {
-    alert("❌ Fill all required fields.");
-    return;
-  }
-
-  if (term !== currentTerm) {
-    alert(`⚠️ You can only create questions for ${currentTerm}`);
-    return;
-  }
-
-  const key = getExamKey();
-  if (localStorage.getItem(key + "_status") === "Approved") {
-    alert("✅ Already approved. Editing locked.");
-    return;
-  }
-
-  localStorage.setItem(key + "_text", text);
-  localStorage.setItem(key + "_format", format);
-  localStorage.setItem(key + "_term", term);
-  qStatus.textContent = "💾 Draft saved";
-  qStatus.style.color = "blue";
-}
-
-questionFile.addEventListener("change", e => {
-  const file = e.target.files[0];
-  if (!file) return;
-  const reader = new FileReader();
-  reader.onload = () => {
-    localStorage.setItem(getExamKey() + "_file", reader.result);
-    alert("📎 File attached successfully.");
-  };
-  reader.readAsDataURL(file);
-});
-
-function submitExamQuestions() {
-  const { subject, class: cls, term, type, text } = getAllInputs();
-  if (!subject || !cls || !text) {
-    alert("❌ Fill all required fields.");
-    return;
-  }
-
-  if (term !== currentTerm) {
-    alert(`⚠️ You can only submit for ${currentTerm}`);
-    return;
-  }
-
-  const key = getExamKey();
-  localStorage.setItem(key + "_text", text);
-  localStorage.setItem(key + "_status", "Pending");
-  qStatus.textContent = "📤 Submitted · Awaiting Approval";
-  qStatus.style.color = "orange";
-}
-
-function loadExamDraftStatus() {
-  const key = getExamKey();
-  const status = localStorage.getItem(key + "_status");
-  const text = localStorage.getItem(key + "_text");
-
-  if (text) questionText.value = text;
-
-  if (status === "Approved") {
-    qStatus.textContent = "✅ Approved by Headteacher";
-    qStatus.style.color = "green";
-    questionText.disabled = true;
-    typeSelect.disabled = true;
-    termSelect.disabled = true;
-    subjectSelect.disabled = true;
-    classSelect.disabled = true;
-    formatSelect.disabled = true;
-  } else if (status === "Pending") {
-    qStatus.textContent = "📤 Submitted · Awaiting Approval";
-    qStatus.style.color = "orange";
-  } else if (text) {
-    qStatus.textContent = "💾 Draft saved";
-    qStatus.style.color = "blue";
-  }
-}
-
-window.onload = loadExamDraftStatus;
+    window.onload = loadExamDraftStatus;
   </script>
 </body>
 </html>
