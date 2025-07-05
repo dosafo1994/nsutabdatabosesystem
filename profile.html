@@ -143,7 +143,9 @@
     let profile = null;
 
     async function loadProfile() {
-      const phone = sessionStorage.getItem("username");
+      const phone =
+        sessionStorage.getItem("username") ||
+        JSON.parse(localStorage.getItem("activeUser"))?.username;
 
       if (!phone) {
         alert("Session expired. Please log in again.");
@@ -223,8 +225,12 @@
 
       sessionStorage.setItem("username", newPhone);
       sessionStorage.setItem("displayName", newName);
-      statusBox.innerHTML = `<div class="status success">✅ Profile updated successfully.</div>`;
+      localStorage.setItem(
+        "activeUser",
+        JSON.stringify({ username: newPhone, displayName: newName, role: "headteacher" })
+      );
 
+      statusBox.innerHTML = `<div class="status success">✅ Profile updated successfully.</div>`;
       document.getElementById("oldPin").value = "";
       document.getElementById("newPin").value = "";
     }
