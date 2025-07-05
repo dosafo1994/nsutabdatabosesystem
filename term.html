@@ -156,7 +156,7 @@
       statusBox.textContent = `📌 Current Term (Local): ${termData.term}, Year: ${termData.year}, Promotion: ${termData.isPromotion ? "Yes" : "No"}`;
     }
 
-    async function saveTerm() {
+    window.saveTerm = function () {
       const newTerm = termInput.value;
       const newYear = yearInput.value.trim();
       const isPromotion = promoInput.value === "true";
