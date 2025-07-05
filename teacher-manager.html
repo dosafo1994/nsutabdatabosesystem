@@ -169,7 +169,7 @@
       }
     }
 
-    async function loadTeachers() {
+    window.loadTeacher = async function() {
       const { data: users, error } = await supabase.from("Teacher").select("*");
       const tbody = document.querySelector("#teacherTable tbody");
       tbody.innerHTML = "";
