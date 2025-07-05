@@ -2,7 +2,7 @@
 <html lang="en">
 <head>
   <meta charset="UTF-8" />
-  <title>Headteacher Login | Nsuta Portal</title>
+  <title>Headteacher Profile | Nsuta Portal</title>
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
   <style>
@@ -10,13 +10,13 @@
       font-family: Arial, sans-serif;
       background: #f4f9ff;
       padding: 40px;
-      max-width: 400px;
+      max-width: 520px;
       margin: auto;
     }
 
     h2 {
       text-align: center;
-      margin-bottom: 30px;
+      margin-bottom: 20px;
     }
 
     label {
@@ -25,12 +25,26 @@
       font-weight: bold;
     }
 
+    .input-wrapper {
+      position: relative;
+    }
+
     input {
       width: 100%;
       padding: 10px;
       font-size: 16px;
       margin-top: 5px;
       box-sizing: border-box;
+    }
+
+    .eye-icon {
+      position: absolute;
+      right: 10px;
+      top: 50%;
+      transform: translateY(-50%);
+      cursor: pointer;
+      font-size: 18px;
+      color: #888;
     }
 
     button {
@@ -57,31 +71,68 @@
       font-size: 14px;
     }
 
+    .success {
+      background: #e7ffe7;
+      color: green;
+      border: 1px solid #b2e0b2;
+    }
+
     .error {
       background: #ffe7e7;
       color: crimson;
       border: 1px solid #e0b2b2;
     }
 
-    .success {
-      background: #e7ffe7;
-      color: green;
-      border: 1px solid #b2e0b2;
+    .back {
+      margin-top: 30px;
+      text-align: center;
+      font-size: 14px;
+    }
+
+    .back a {
+      color: #0077cc;
+      text-decoration: none;
+    }
+
+    .back a:hover {
+      text-decoration: underline;
     }
   </style>
 </head>
 <body>
-  <h2>🔐 Headteacher Login</h2>
+  <h2>👤 Headteacher Profile</h2>
+
+  <label>Role</label>
+  <input type="text" value="Headteacher" disabled />
+
+  <label>School</label>
+  <input type="text" value="Nkawkaw Nsuta B Basic School" disabled />
+
+  <label for="name">Full Name</label>
+  <input type="text" id="name" />
 
   <label for="phone">Phone Number</label>
-  <input type="text" id="phone" placeholder="e.g. 0553486399" />
+  <input type="text" id="phone" />
 
-  <label for="pin">PIN</label>
-  <input type="password" id="pin" maxlength="4" placeholder="4-digit PIN" />
+  <label for="oldPin">Current PIN</label>
+  <div class="input-wrapper">
+    <input type="password" id="oldPin" maxlength="4" />
+    <span class="eye-icon" onclick="togglePin('oldPin')">👁️</span>
+  </div>
 
-  <button onclick="login()">Login</button>
+  <label for="newPin">New PIN</label>
+  <div class="input-wrapper">
+    <input type="password" id="newPin" maxlength="4" />
+    <span class="eye-icon" onclick="togglePin('newPin')">👁️</span>
+  </div>
+
+  <button onclick="updateProfile()">Save Changes</button>
 
   <div id="statusBox"></div>
+
+  <div class="back">
+    <a href="dashboard.html">← Return to Dashboard</a>
+  </div>
 
   <script>
     const supabase = window.supabase.createClient(
@@ -89,55 +140,87 @@
       "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImlndXNwamZvcnp5bmRlZHhhZmRpIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTE2MDc5MzksImV4cCI6MjA2NzE4MzkzOX0.h_OF0GcsaXPJm7OuuA3fCz4FaXV3_VBXG_WLr0zafVE"
     );
 
-    async function login() {
-      const phone = document.getElementById("phone").value.trim();
-      const pin = document.getElementById("pin").value.trim();
+    let head = null;
+
+    async function loadProfile() {
+      const phone = sessionStorage.getItem("username");
+      if (!phone) {
+        alert("Session expired. Please log in again.");
+        window.location.href = "login.html";
+        return;
+      }
+
+      const { data, error } = await supabase
+        .from("Teacher")
+        .select("*")
+        .eq("phone", phone)
+        .eq("role", "headteacher")
+        .single();
+
+      if (error || !data) {
+        alert("Failed to load profile.");
+        return;
+      }
+
+      head = data;
+      document.getElementById("name").value = head.full_name || "";
+      document.getElementById("phone").value = head.phone || "";
+    }
+
+    async function updateProfile() {
+      const newName = document.getElementById("name").value.trim();
+      const newPhone = document.getElementById("phone").value.trim();
+      const oldPin = document.getElementById("oldPin").value.trim();
+      const newPin = document.getElementById("newPin").value.trim();
       const statusBox = document.getElementById("statusBox");
       statusBox.innerHTML = "";
 
-      if (!phone || !pin) {
-        statusBox.innerHTML = `<div class="status error">⚠️ Please enter both phone number and PIN.</div>`;
+      if (!newName || !newPhone) {
+        statusBox.innerHTML = `<div class="status error">⚠️ Please enter name and phone number.</div>`;
         return;
       }
 
-      console.log("🔍 Attempting login with:", phone, pin);
+      if ((oldPin || newPin) && (!/^\d{4}$/.test(oldPin) || !/^\d{4}$/.test(newPin))) {
+        statusBox.innerHTML = `<div class="status error">⚠️ PINs must be exactly 4 digits.</div>`;
+        return;
+      }
 
-      const { data, error } = await supabase
-        .from("profile")
-        .select("*")
-        .eq("phone", phone)
-        .eq("pin", pin)
-        .eq("role", "headteacher")
-        .maybeSingle();
+      if (oldPin && head.pin !== oldPin) {
+        statusBox.innerHTML = `<div class="status error">❌ Current PIN incorrect. Change not authorized.</div>`;
+        return;
+      }
 
-      console.log("🔎 Supabase response:", data, error);
+      const updateData = {
+        full_name: newName,
+        phone: newPhone
+      };
+
+      if (newPin) updateData.pin = newPin;
+
+      const { error } = await supabase
+        .from("Teacher")
+        .update(updateData)
+        .eq("id", head.id);
 
       if (error) {
-        statusBox.innerHTML = `<div class="status error">❌ Login failed: ${error.message}</div>`;
+        statusBox.innerHTML = `<div class="status error">❌ Failed to update profile: ${error.message}</div>`;
         return;
       }
 
-      if (!data) {
-        statusBox.innerHTML = `<div class="status error">❌ Invalid phone or PIN. Please try again.</div>`;
-        return;
-      }
+      sessionStorage.setItem("username", newPhone);
+      sessionStorage.setItem("displayName", newName);
+      statusBox.innerHTML = `<div class="status success">✅ Profile updated successfully.</div>`;
 
-      // ✅ Save session
-      sessionStorage.setItem("username", data.phone);
-      sessionStorage.setItem("displayName", data.full_name);
-      sessionStorage.setItem("role", data.role);
-
-      localStorage.setItem("activeUser", JSON.stringify({
-        username: data.phone,
-        displayName: data.full_name,
-        role: data.role
-      }));
-
-      statusBox.innerHTML = `<div class="status success">✅ Login successful! Redirecting...</div>`;
-      setTimeout(() => {
-        window.location.href = "dashboard.html";
-      }, 1000);
+      document.getElementById("oldPin").value = "";
+      document.getElementById("newPin").value = "";
     }
+
+    function togglePin(fieldId) {
+      const input = document.getElementById(fieldId);
+      input.type = input.type === "password" ? "text" : "password";
+    }
+
+    window.onload = loadProfile;
   </script>
 </body>
 </html>
