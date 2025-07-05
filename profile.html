@@ -4,15 +4,7 @@
   <meta charset="UTF-8" />
   <title>Headteacher Profile | Nsuta Portal</title>
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <script>
-    const activeUser = JSON.parse(localStorage.getItem("activeUser"));
-    if (!sessionStorage.getItem("role") && activeUser?.role === "headteacher") {
-      sessionStorage.setItem("username", activeUser.username);
-      sessionStorage.setItem("displayName", activeUser.displayName);
-      sessionStorage.setItem("role", activeUser.role);
-    }
-  </script>
-  <script src="guard.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
   <style>
     body {
       font-family: Arial, sans-serif;
@@ -143,21 +135,39 @@
   </div>
 
   <script>
-    const users = JSON.parse(localStorage.getItem("userAccounts")) || [];
-    const username = sessionStorage.getItem("username");
-    const head = users.find(u => u.phone === username && u.role === "headteacher");
+    const supabase = window.supabase.createClient(
+      "https://iguspjforzyndedxafdi.supabase.co",
+      "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImlndXNwamZvcnp5bmRlZHhhZmRpIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTE2MDc5MzksImV4cCI6MjA2NzE4MzkzOX0.h_OF0GcsaXPJm7OuuA3fCz4FaXV3_VBXG_WLr0zafVE"
+    );
 
-    if (head) {
-      document.getElementById("name").value = head.name || "";
+    let head = null;
+
+    async function loadProfile() {
+      const phone = sessionStorage.getItem("username");
+      if (!phone) {
+        alert("Session expired. Please log in again.");
+        window.location.href = "login.html";
+        return;
+      }
+
+      const { data, error } = await supabase
+        .from("Teacher")
+        .select("*")
+        .eq("phone", phone)
+        .eq("role", "headteacher")
+        .single();
+
+      if (error || !data) {
+        alert("Failed to load profile.");
+        return;
+      }
+
+      head = data;
+      document.getElementById("name").value = head.full_name || "";
       document.getElementById("phone").value = head.phone || "";
     }
 
-    function togglePin(fieldId) {
-      const input = document.getElementById(fieldId);
-      input.type = input.type === "password" ? "text" : "password";
-    }
-
-    function updateProfile() {
+    async function updateProfile() {
       const newName = document.getElementById("name").value.trim();
       const newPhone = document.getElementById("phone").value.trim();
       const oldPin = document.getElementById("oldPin").value.trim();
@@ -170,70 +180,47 @@
         return;
       }
 
-      if (users.some(u => u.phone === newPhone && u.phone !== username)) {
-        statusBox.innerHTML = `<div class="status error">⚠️ Phone number already used by another user.</div>`;
+      if ((oldPin || newPin) && (!/^\d{4}$/.test(oldPin) || !/^\d{4}$/.test(newPin))) {
+        statusBox.innerHTML = `<div class="status error">⚠️ PINs must be exactly 4 digits.</div>`;
         return;
       }
 
-      // PIN update logic
-      if (oldPin || newPin) {
-        if (!/^\d{4}$/.test(oldPin)) {
-          statusBox.innerHTML = `<div class="status error">⚠️ Enter your current 4-digit PIN to authorize change.</div>`;
-          return;
-        }
-
-        if (!/^\d{4}$/.test(newPin)) {
-          statusBox.innerHTML = `<div class="status error">⚠️ New PIN must be exactly 4 digits.</div>`;
-          return;
-        }
-
-        if (head.pin !== oldPin) {
-          statusBox.innerHTML = `<div class="status error">❌ Current PIN incorrect. Change not authorized.</div>`;
-          return;
-        }
-
-        head.pin = newPin;
+      if (oldPin && head.pin !== oldPin) {
+        statusBox.innerHTML = `<div class="status error">❌ Current PIN incorrect. Change not authorized.</div>`;
+        return;
       }
 
-      head.name = newName;
-      head.phone = newPhone;
+      const updateData = {
+        full_name: newName,
+        phone: newPhone
+      };
 
-      localStorage.setItem("userAccounts", JSON.stringify(users));
+      if (newPin) updateData.pin = newPin;
+
+      const { error } = await supabase
+        .from("Teacher")
+        .update(updateData)
+        .eq("id", head.id);
+
+      if (error) {
+        statusBox.innerHTML = `<div class="status error">❌ Failed to update profile: ${error.message}</div>`;
+        return;
+      }
+
       sessionStorage.setItem("username", newPhone);
       sessionStorage.setItem("displayName", newName);
-      localStorage.setItem("activeUser", JSON.stringify({
-        username: newPhone,
-        displayName: newName,
-        role: "headteacher"
-      }));
+      statusBox.innerHTML = `<div class="status success">✅ Profile updated successfully.</div>`;
 
-      // Clear inputs
       document.getElementById("oldPin").value = "";
       document.getElementById("newPin").value = "";
-
-      statusBox.innerHTML = `<div class="status success">✅ Profile updated locally. Syncing to GitHub...</div>`;
-
-      fetch("https://your-backend.com/update-profile", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          updatedContent: users,
-          commitMessage: `Updated headteacher profile (${newPhone}) via portal`
-        })
-      })
-      .then(res => res.json())
-      .then(data => {
-        if (data.success) {
-          statusBox.innerHTML += `<div class="status success">✅ Synced to GitHub successfully.</div>`;
-        } else {
-          statusBox.innerHTML += `<div class="status error">⚠️ GitHub sync failed: ${data.error || "Unknown error"}</div>`;
-        }
-      })
-      .catch(err => {
-        console.error(err);
-        statusBox.innerHTML += `<div class="status error">❌ Could not contact sync server.</div>`;
-      });
     }
+
+    function togglePin(fieldId) {
+      const input = document.getElementById(fieldId);
+      input.type = input.type === "password" ? "text" : "password";
+    }
+
+    window.onload = loadProfile;
   </script>
 </body>
 </html>
