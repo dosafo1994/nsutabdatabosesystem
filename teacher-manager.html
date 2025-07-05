@@ -169,7 +169,7 @@
       }
     }
 
-    window.loadTeacher = async function() {
+    async function loadTeachers() {
       const { data: users, error } = await supabase.from("Teacher").select("*");
       const tbody = document.querySelector("#teacherTable tbody");
       tbody.innerHTML = "";
@@ -195,6 +195,7 @@
         tbody.appendChild(row);
       });
     }
+    window.onload = loadTeachers;
 
     async function openEdit(id) {
       const { data: teacher } = await supabase.from("Teacher").select("*").eq("id", id).single();
