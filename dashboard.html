@@ -15,7 +15,6 @@
     }
   </script>
   <script src="guard.js"></script>
-
   <style>
     body {
       font-family: Arial, sans-serif;
@@ -99,12 +98,13 @@
 </head>
 <body>
   <h3>📊 Score Upload Status</h3>
-<select id="termFilter" onchange="loadScoreStatus()">
-  <option>Term 1</option>
-  <option selected>Term 2</option>
-  <option>Term 3</option>
-</select>
-<div id="scoreStatusBox"></div>
+  <select id="termFilter" onchange="loadScoreStatus()">
+    <option>Term 1</option>
+    <option selected>Term 2</option>
+    <option>Term 3</option>
+  </select>
+  <div id="scoreStatusBox"></div>
+
   <header class="dashboard-header">
     <h1>🎓 Headteacher Dashboard</h1>
     <div class="header-controls">
@@ -146,56 +146,15 @@
       </div>
     </div>
   </div>
+
   <button onclick="testSupabaseConnection()">🔌 Test Supabase Connection</button>
 
   <script>
-    async function testSupabaseConnection() {
-  const { data, error } = await supabase.from("assignments").select("*").limit(1);
+    // ✅ Initialize Supabase properly
+    const SUPABASE_URL = "https://iguspjforzyndedxafdi.supabase.co";
+    const SUPABASE_ANON_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImlndXNwamZvcnp5bmRlZHhhZmRpIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTE2MDc5MzksImV4cCI6MjA2NzE4MzkzOX0.h_OF0GcsaXPJm7OuuA3fCz4FaXV3_VBXG_WLr0zafVE";
+    const supabase = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
 
-  if (error) {
-    console.error("❌ Supabase connection failed:", error.message);
-    alert("❌ Supabase is NOT connected.");
-  } else {
-    console.log("✅ Supabase connected. Sample data:", data);
-    alert("✅ Supabase is connected and working!");
-  }
-}
-    async function loadScoreStatus() {
-  const term = document.getElementById("termFilter").value;
-  const box = document.getElementById("scoreStatusBox");
-  box.innerHTML = "Loading...";
-
-  const { data, error } = await supabase
-    .from("scores")
-    .select("*")
-    .eq("term", term);
-
-  if (error) {
-    box.innerHTML = "❌ Failed to load score data.";
-    return;
-  }
-
-  const grouped = {};
-  data.forEach(entry => {
-    const key = `${entry.class} - ${entry.subject}`;
-    if (!grouped[key]) grouped[key] = [];
-    grouped[key].push(entry.teacher_id);
-  });
-
-  let html = "<table><tr><th>Class</th><th>Subject</th><th>Submitted By</th></tr>";
-  for (const key in grouped) {
-    const [cls, subj] = key.split(" - ");
-    html += `<tr><td>${cls}</td><td>${subj}</td><td>${grouped[key].join(", ")}</td></tr>`;
-  }
-  html += "</table>";
-
-  box.innerHTML = html;
-}
-    // Replace these with your actual project values from Supabase → Project Settings → API
-const SUPABASE_URL = "https://iguspjforzyndedxafdi.supabase.co";
-const SUPABASE_ANON_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImlndXNwamZvcnp5bmRlZHhhZmRpIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTE2MDc5MzksImV4cCI6MjA2NzE4MzkzOX0.h_OF0GcsaXPJm7OuuA3fCz4FaXV3_VBXG_WLr0zafVE";
-
-const supabase = supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
     const displayName = sessionStorage.getItem("displayName") || "Headteacher";
     document.getElementById("username").textContent = displayName;
 
@@ -208,6 +167,53 @@ const supabase = supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
       localStorage.removeItem("activeUser");
       location.href = "index.html";
     }
+
+    async function testSupabaseConnection() {
+      const { data, error } = await supabase.from("assignments").select("*").limit(1);
+
+      if (error) {
+        console.error("❌ Supabase connection failed:", error.message);
+        alert("❌ Supabase is NOT connected.");
+      } else {
+        console.log("✅ Supabase connected. Sample data:", data);
+        alert("✅ Supabase is connected and working!");
+      }
+    }
+
+    async function loadScoreStatus() {
+      const term = document.getElementById("termFilter").value;
+      const box = document.getElementById("scoreStatusBox");
+      box.innerHTML = "Loading...";
+
+      const { data, error } = await supabase
+        .from("scores")
+        .select("*")
+        .eq("term", term);
+
+      if (error) {
+        box.innerHTML = "❌ Failed to load score data.";
+        return;
+      }
+
+      const grouped = {};
+      data.forEach(entry => {
+        const key = `${entry.class} - ${entry.subject}`;
+        if (!grouped[key]) grouped[key] = [];
+        grouped[key].push(entry.teacher_id);
+      });
+
+      let html = "<table><tr><th>Class</th><th>Subject</th><th>Submitted By</th></tr>";
+      for (const key in grouped) {
+        const [cls, subj] = key.split(" - ");
+        html += `<tr><td>${cls}</td><td>${subj}</td><td>${grouped[key].join(", ")}</td></tr>`;
+      }
+      html += "</table>";
+
+      box.innerHTML = html;
+    }
+
+    // Load score status on page load
+    window.onload = loadScoreStatus;
   </script>
 </body>
 </html>
