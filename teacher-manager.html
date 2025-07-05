@@ -5,12 +5,6 @@
   <title>Teacher Manager</title>
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
-  <script>
-    const supabase = window.supabase.createClient(
-      "https://iguspjforzyndedxafdi.supabase.co", // 🔁 Replace with your Supabase URL
-      "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImlndXNwamZvcnp5bmRlZHhhZmRpIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTE2MDc5MzksImV4cCI6MjA2NzE4MzkzOX0.h_OF0GcsaXPJm7OuuA3fCz4FaXV3_VBXG_WLr0zafVE"                        // 🔁 Replace with your anon key
-    );
-  </script>
   <style>
     body {
       font-family: Arial, sans-serif;
@@ -129,7 +123,13 @@
     <tbody></tbody>
   </table>
 
+  <!-- ✅ Script placed at the bottom -->
   <script>
+    const supabase = window.supabase.createClient(
+      "https://iguspjforzyndedxafdi.supabase.co",
+      "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImlndXNwamZvcnp5bmRlZHhhZmRpIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTE2MDc5MzksImV4cCI6MjA2NzE4MzkzOX0.h_OF0GcsaXPJm7OuuA3fCz4FaXV3_VBXG_WLr0zafVE"
+    );
+
     function getCheckedValues(groupId) {
       return Array.from(document.querySelectorAll(`#${groupId} input:checked`)).map(b => b.value.trim());
     }
@@ -201,18 +201,17 @@
       if (!teacher) return;
 
       const tbody = document.querySelector("#teacherTable tbody");
-      const index = Array.from(tbody.children).findIndex(row => row.querySelector("button").onclick.toString().includes(id));
+      const index = Array.from(tbody.children).findIndex(row => row.innerHTML.includes(id));
       const row = document.createElement("tr");
 
       row.innerHTML = `
         <td><input class="edit-input" value="${teacher.full_name}" onchange="updateTeacher('${id}', 'full_name', this.value)" /></td>
         <td><input class="edit-input" value="${teacher.phone}" onchange="updateTeacher('${id}', 'phone', this.value)" /></td>
-        <td><input class="edit-input" value="${teacher.pin}" onchange="updateTeacher('${id}', 'pin', this.value)" maxlength="4" /></td>
-        <td><input class="edit-input" value="${(teacher.subjects || []).join(',')}" onchange="updateTeacher('${id}', 'subjects', this.value.split(','))" /></td>
-        <td><input class="edit-input" value="${(teacher.classes || []).join(',')}" onchange="updateTeacher('${id}', 'classes', this.value.split(','))" /></td>
-        <td><button class="action-btn remove        <td><button class="action-btn remove-btn" onclick="loadTeachers()">Done</button></td>
+        <td><input class="edit-input" value="${teacher.pin}"        <td><input class="edit-input" value="${teacher.pin}" onchange="updateTeacher('${id}', 'pin', this.value)" maxlength="4" /></td>
+        <td><input class="edit-input" value="${(teacher.subjects || []).join(',')}" onchange="updateTeacher('${id}', 'subjects', this.value.split(',').map(s => s.trim()))" /></td>
+        <td><input class="edit-input" value="${(teacher.classes || []).join(',')}" onchange="updateTeacher('${id}', 'classes', this.value.split(',').map(c => c.trim()))" /></td>
+        <td><button class="action-btn remove-btn" onclick="loadTeachers()">Done</button></td>
       `;
-      const tbody = document.querySelector("#teacherTable tbody");
       tbody.replaceChild(row, tbody.children[index]);
     }
 
