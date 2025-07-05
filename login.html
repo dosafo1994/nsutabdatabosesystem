@@ -4,6 +4,7 @@
   <meta charset="UTF-8" />
   <title>Login | Nsuta Portal</title>
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
   <style>
     body {
       font-family: Arial, sans-serif;
@@ -91,20 +92,38 @@
   </div>
 
   <script>
-    function detectRole() {
+    // ✅ Initialize Supabase
+    const supabase = window.supabase.createClient(
+      "https://iguspjforzyndedxafdi.supabase.co",
+      "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImlndXNwamZvcnp5bmRlZHhhZmRpIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTE2MDc5MzksImV4cCI6MjA2NzE4MzkzOX0.h_OF0GcsaXPJm7OuuA3fCz4FaXV3_VBXG_WLr0zafVE"
+    );
+
+    async function detectRole() {
       const phone = document.getElementById("phone").value.trim();
-      const users = JSON.parse(localStorage.getItem("userAccounts")) || [];
-      const user = users.find(u => u.phone === phone);
       const rolePreview = document.getElementById("rolePreview");
 
-      rolePreview.textContent = user ? `Detected Role: ${user.role.toUpperCase()}` : "";
+      if (!phone) {
+        rolePreview.textContent = "";
+        return;
+      }
+
+      const { data, error } = await supabase
+        .from("Teacher")
+        .select("role")
+        .eq("phone", phone)
+        .maybeSingle();
+
+      if (data && data.role) {
+        rolePreview.textContent = `Detected Role: ${data.role.toUpperCase()}`;
+      } else {
+        rolePreview.textContent = "";
+      }
     }
 
-    function login() {
+    async function login() {
       const phone = document.getElementById("phone").value.trim();
       const pin = document.getElementById("pin").value.trim();
       const feedbackBox = document.getElementById("feedbackBox");
-      const users = JSON.parse(localStorage.getItem("userAccounts")) || [];
 
       feedbackBox.textContent = "";
       feedbackBox.className = "feedback";
@@ -121,30 +140,35 @@
         return;
       }
 
-      const found = users.find(u => u.phone === phone && u.pin === pin);
+      const { data: user, error } = await supabase
+        .from("Teacher")
+        .select("*")
+        .eq("phone", phone)
+        .eq("pin", pin)
+        .single();
 
-      if (!found) {
+      if (error || !user) {
         feedbackBox.textContent = "❌ Invalid phone or PIN.";
         feedbackBox.classList.add("error");
         return;
       }
 
-      // ✅ Store full record in activeUser
-      localStorage.setItem("activeUser", JSON.stringify(found));
-      sessionStorage.setItem("username", found.phone);
-      sessionStorage.setItem("displayName", found.name);
-      sessionStorage.setItem("role", found.role);
+      // ✅ Store session
+      sessionStorage.setItem("username", user.phone);
+      sessionStorage.setItem("displayName", user.full_name);
+      sessionStorage.setItem("role", user.role);
+      sessionStorage.setItem("teacher", JSON.stringify(user));
 
-      feedbackBox.textContent = `✅ Logged in as ${found.role}`;
+      feedbackBox.textContent = `✅ Logged in as ${user.role}`;
       feedbackBox.classList.add("success");
 
       setTimeout(() => {
-        if (found.role === "teacher") {
+        if (user.role === "teacher") {
           window.location.href = "teacher-dashboard.html";
-        } else if (found.role === "headteacher") {
+        } else if (user.role === "headteacher") {
           window.location.href = "dashboard.html";
         } else {
-          feedbackBox.textContent = "⚠️ Unknown role: " + found.role;
+          feedbackBox.textContent = "⚠️ Unknown role: " + user.role;
           feedbackBox.classList.add("error");
         }
       }, 800);
