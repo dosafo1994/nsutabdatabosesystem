@@ -9,14 +9,14 @@
 
   <!-- ✅ Restore session if lost -->
   <script>
-    const storedUser = JSON.parse(localStorage.getItem("activeUser"));
+    const activeUser = JSON.parse(localStorage.getItem("activeUser"));
     if (
       !sessionStorage.getItem("role") &&
-      storedUser?.role === "headteacher"
+      activeUser?.role === "headteacher"
     ) {
-      sessionStorage.setItem("username", storedUser.username);
-      sessionStorage.setItem("displayName", storedUser.displayName);
-      sessionStorage.setItem("role", storedUser.role);
+      sessionStorage.setItem("username", activeUser.username);
+      sessionStorage.setItem("displayName", activeUser.displayName);
+      sessionStorage.setItem("role", activeUser.role);
     }
   </script>
   <script src="guard.js"></script>
@@ -101,11 +101,10 @@
   <script>
     const supabase = window.supabase.createClient(
       "https://iguspjforzyndedxafdi.supabase.co",
-      "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImlndXNwamZvcnp5bmRlZHhhZmRpIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTE2MDc5MzksImV4cCI6MjA2NzE4MzkzOX0.h_OF0GcsaXPJm7OuuA3fCz4FaXV3_VBXG_WLr0zafVE"
-/ Replace with your actual anon key
+      "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImlndXNwamZvcnp5bmRlZHhhZmRpIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTE2MDc5MzksImV4cCI6MjA2NzE4MzkzOX0.h_OF0GcsaXPJm7OuuA3fCz4FaXV3_VBXG_WLr0zafVE" // Replace with your actual anon key
     );
 
-    const activeUser = JSON.parse(localStorage.getItem("activeUser")) || {};
+    // Use the already declared activeUser from the previous script block
     const termInput = document.getElementById("term");
     const yearInput = document.getElementById("year");
     const promoInput = document.getElementById("promotion");
@@ -190,11 +189,9 @@
       }
 
       statusBox.textContent = `✅ Settings saved: ${newTerm} | ${newYear} | Promotion: ${isPromotion ? "Yes" : "No"}`;
-    };
+    }
 
-    (async () => {
-      await loadTermFromSupabase();
-    })();
+    window.onload = loadTermFromSupabase;
   </script>
 </body>
 </html>
