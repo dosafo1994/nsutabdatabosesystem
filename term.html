@@ -9,14 +9,14 @@
 
   <!-- ✅ Restore session if lost -->
   <script>
-    const activeUser = JSON.parse(localStorage.getItem("activeUser"));
+    const storedUser = JSON.parse(localStorage.getItem("activeUser"));
     if (
       !sessionStorage.getItem("role") &&
-      activeUser?.role === "headteacher"
+      storedUser?.role === "headteacher"
     ) {
-      sessionStorage.setItem("username", activeUser.username);
-      sessionStorage.setItem("displayName", activeUser.displayName);
-      sessionStorage.setItem("role", activeUser.role);
+      sessionStorage.setItem("username", storedUser.username);
+      sessionStorage.setItem("displayName", storedUser.displayName);
+      sessionStorage.setItem("role", storedUser.role);
     }
   </script>
   <script src="guard.js"></script>
@@ -101,7 +101,8 @@
   <script>
     const supabase = window.supabase.createClient(
       "https://iguspjforzyndedxafdi.supabase.co",
-      "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImlndXNwamZvcnp5bmRlZHhhZmRpIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTE2MDc5MzksImV4cCI6MjA2NzE4MzkzOX0.h_OF0GcsaXPJm7OuuA3fCz4FaXV3_VBXG_WLr0zafVE" // Replace with your actual anon key
+      "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImlndXNwamZvcnp5bmRlZHhhZmRpIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTE2MDc5MzksImV4cCI6MjA2NzE4MzkzOX0.h_OF0GcsaXPJm7OuuA3fCz4FaXV3_VBXG_WLr0zafVE"
+/ Replace with your actual anon key
     );
 
     const activeUser = JSON.parse(localStorage.getItem("activeUser")) || {};
@@ -156,7 +157,7 @@
       statusBox.textContent = `📌 Current Term (Local): ${termData.term}, Year: ${termData.year}, Promotion: ${termData.isPromotion ? "Yes" : "No"}`;
     }
 
-    window.saveTerm = function () {
+    window.saveTerm = async function () {
       const newTerm = termInput.value;
       const newYear = yearInput.value.trim();
       const isPromotion = promoInput.value === "true";
@@ -189,9 +190,11 @@
       }
 
       statusBox.textContent = `✅ Settings saved: ${newTerm} | ${newYear} | Promotion: ${isPromotion ? "Yes" : "No"}`;
-    }
+    };
 
-    window.onload = loadTermFromSupabase;
+    (async () => {
+      await loadTermFromSupabase();
+    })();
   </script>
 </body>
 </html>
