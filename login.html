@@ -66,13 +66,6 @@
 
     .error { color: crimson; }
     .success { color: green; }
-
-    .role-preview {
-      text-align: center;
-      margin-top: 5px;
-      font-size: 14px;
-      color: #555;
-    }
   </style>
 </head>
 <body>
@@ -80,45 +73,20 @@
     <h2>🔐 Nsuta Portal Login</h2>
 
     <label for="phone">Phone Number</label>
-    <input type="text" id="phone" placeholder="e.g. 024XXXXXXX" oninput="detectRole()" />
+    <input type="text" id="phone" placeholder="e.g. 055XXXXXXX" />
 
     <label for="pin">4-digit PIN</label>
     <input type="password" id="pin" maxlength="4" placeholder="Enter PIN" />
-
-    <div id="rolePreview" class="role-preview"></div>
 
     <button onclick="login()">Login</button>
     <div class="feedback" id="feedbackBox"></div>
   </div>
 
   <script>
-    // ✅ Initialize Supabase
     const supabase = window.supabase.createClient(
       "https://iguspjforzyndedxafdi.supabase.co",
-      "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImlndXNwamZvcnp5bmRlZHhhZmRpIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTE2MDc5MzksImV4cCI6MjA2NzE4MzkzOX0.h_OF0GcsaXPJm7OuuA3fCz4FaXV3_VBXG_WLr0zafVE"
+      "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9..."
     );
-
-    async function detectRole() {
-      const phone = document.getElementById("phone").value.trim();
-      const rolePreview = document.getElementById("rolePreview");
-
-      if (!phone) {
-        rolePreview.textContent = "";
-        return;
-      }
-
-      const { data, error } = await supabase
-        .from("Teacher")
-        .select("role")
-        .eq("phone", phone)
-        .maybeSingle();
-
-      if (data && data.role) {
-        rolePreview.textContent = `Detected Role: ${data.role.toUpperCase()}`;
-      } else {
-        rolePreview.textContent = "";
-      }
-    }
 
     async function login() {
       const phone = document.getElementById("phone").value.trim();
@@ -134,18 +102,13 @@
         return;
       }
 
-      if (!/^\d{4}$/.test(pin)) {
-        feedbackBox.textContent = "⚠️ PIN must be a 4-digit number.";
-        feedbackBox.classList.add("error");
-        return;
-      }
-
       const { data: user, error } = await supabase
-        .from("Teacher")
+        .from("profile")
         .select("*")
         .eq("phone", phone)
         .eq("pin", pin)
-        .single();
+        .eq("role", "headteacher")
+        .maybeSingle();
 
       if (error || !user) {
         feedbackBox.textContent = "❌ Invalid phone or PIN.";
@@ -157,20 +120,17 @@
       sessionStorage.setItem("username", user.phone);
       sessionStorage.setItem("displayName", user.full_name);
       sessionStorage.setItem("role", user.role);
-      sessionStorage.setItem("teacher", JSON.stringify(user));
+      localStorage.setItem("activeUser", JSON.stringify({
+        username: user.phone,
+        displayName: user.full_name,
+        role: user.role
+      }));
 
       feedbackBox.textContent = `✅ Logged in as ${user.role}`;
       feedbackBox.classList.add("success");
 
       setTimeout(() => {
-        if (user.role === "teacher") {
-          window.location.href = "teacher-dashboard.html";
-        } else if (user.role === "headteacher") {
-          window.location.href = "dashboard.html";
-        } else {
-          feedbackBox.textContent = "⚠️ Unknown role: " + user.role;
-          feedbackBox.classList.add("error");
-        }
+        window.location.href = "dashboard.html";
       }, 800);
     }
   </script>
