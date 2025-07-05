@@ -156,13 +156,12 @@
         return;
       }
 
-      const { data, error } = await      const { data, error } = await supabase
+      const { data, error } = await supabase
         .from("profile")
         .select("*")
         .eq("phone", phone)
         .eq("role", "headteacher")
         .maybeSingle();
-
       if (error) {
         console.error("❌ Supabase error:", error);
         alert("Error loading profile. Please try again.");
