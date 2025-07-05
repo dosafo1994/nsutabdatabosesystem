@@ -83,18 +83,18 @@
       border: 1px solid #e0b2b2;
     }
 
-    .back {
+    .back, .logout {
       margin-top: 30px;
       text-align: center;
       font-size: 14px;
     }
 
-    .back a {
+    .back a, .logout a {
       color: #0077cc;
       text-decoration: none;
     }
 
-    .back a:hover {
+    .back a:hover, .logout a:hover {
       text-decoration: underline;
     }
   </style>
@@ -133,11 +133,14 @@
   <div class="back">
     <a href="dashboard.html">← Return to Dashboard</a>
   </div>
+  <div class="logout">
+    <a href="#" onclick="logout()">🚪 Logout</a>
+  </div>
 
   <script>
     const supabase = window.supabase.createClient(
       "https://iguspjforzyndedxafdi.supabase.co",
-      "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImlndXNwamZvcnp5bmRlZHhhZmRpIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTE2MDc5MzksImV4cCI6MjA2NzE4MzkzOX0.h_OF0GcsaXPJm7OuuA3fCz4FaXV3_VBXG_WLr0zafVE"
+      "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9..."
     );
 
     let profile = null;
@@ -153,7 +156,7 @@
         return;
       }
 
-      const { data, error } = await supabase
+      const { data, error } = await      const { data, error } = await supabase
         .from("profile")
         .select("*")
         .eq("phone", phone)
@@ -225,10 +228,11 @@
 
       sessionStorage.setItem("username", newPhone);
       sessionStorage.setItem("displayName", newName);
-      localStorage.setItem(
-        "activeUser",
-        JSON.stringify({ username: newPhone, displayName: newName, role: "headteacher" })
-      );
+      localStorage.setItem("activeUser", JSON.stringify({
+        username: newPhone,
+        displayName: newName,
+        role: "headteacher"
+      }));
 
       statusBox.innerHTML = `<div class="status success">✅ Profile updated successfully.</div>`;
       document.getElementById("oldPin").value = "";
@@ -238,6 +242,12 @@
     function togglePin(fieldId) {
       const input = document.getElementById(fieldId);
       input.type = input.type === "password" ? "text" : "password";
+    }
+
+    function logout() {
+      sessionStorage.clear();
+      localStorage.removeItem("activeUser");
+      window.location.href = "login.html";
     }
 
     window.onload = loadProfile;
