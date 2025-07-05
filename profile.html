@@ -144,11 +144,14 @@
 
     async function loadProfile() {
       const phone = sessionStorage.getItem("username");
+
       if (!phone) {
         alert("Session expired. Please log in again.");
         window.location.href = "login.html";
         return;
       }
+
+      console.log("🔍 Looking for profile with phone:", phone);
 
       const { data, error } = await supabase
         .from("profile")
@@ -157,8 +160,14 @@
         .eq("role", "headteacher")
         .maybeSingle();
 
+      if (error) {
+        console.error("❌ Supabase error:", error);
+        alert("Error loading profile. Please try again.");
+        return;
+      }
+
       if (!data) {
-        alert("No headteacher profile found.");
+        alert("No headteacher profile found for this phone number.");
         return;
       }
 
