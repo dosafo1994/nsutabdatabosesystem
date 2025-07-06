@@ -4,6 +4,7 @@
   <meta charset="UTF-8" />
   <title>Merged Score Review | Nsuta Portal</title>
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
   <style>
     body { font-family: Arial; background: #f2f7ff; padding: 30px; max-width: 1100px; margin: auto; }
     h1 { color: #0077cc; font-size: 24px; margin-bottom: 10px; }
@@ -18,14 +19,14 @@
     .status { color: green; font-weight: bold; margin-top: 10px; }
   </style>
   <script>
-  const activeUser = JSON.parse(localStorage.getItem("activeUser"));
-  if (!sessionStorage.getItem("role") && activeUser?.role === "headteacher") {
-    sessionStorage.setItem("username", activeUser.username);
-    sessionStorage.setItem("role", activeUser.role);
-    sessionStorage.setItem("displayName", activeUser.displayName);
-  }
-</script>
-<script src="guard.js"></script>
+    const activeUser = JSON.parse(localStorage.getItem("activeUser"));
+    if (!sessionStorage.getItem("role") && activeUser?.role === "headteacher") {
+      sessionStorage.setItem("username", activeUser.username);
+      sessionStorage.setItem("role", activeUser.role);
+      sessionStorage.setItem("displayName", activeUser.displayName);
+    }
+  </script>
+  <script src="guard.js"></script>
 </head>
 <body>
   <h1>📊 Merged Score Review</h1>
@@ -44,10 +45,12 @@
     <option>Math</option>
     <option>English</option>
     <option>Science</option>
-    <option>ICT</option>
+    <option>Computing</option>
     <option>RME</option>
     <option>Social Studies</option>
-    <option>French</option>
+    <option>Twi</option>
+    <option>Career Tech</option>
+    <option>Creative Art</option>
   </select>
 
   <button onclick="loadMerged()">Load Scores</button>
@@ -71,36 +74,57 @@
   <button onclick="approve()">✅ Approve Marks</button>
 
   <script>
-    function loadMerged() {
+    const supabase = window.supabase.createClient(
+      "https://iguspjforzyndedxafdi.supabase.co",
+      "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImlndXNwamZvcnp5bmRlZHhhZmRpIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTE2MDc5MzksImV4cCI6MjA2NzE4MzkzOX0.h_OF0GcsaXPJm7OuuA3fCz4FaXV3_VBXG_WLr0zafVE" 
+    );
+    async function loadMerged() {
       const cls = document.getElementById("classSelect").value;
       const sub = document.getElementById("subjectSelect").value;
-      document.getElementById("alert").textContent = "";
-      document.getElementById("status").textContent = "";
-      document.getElementById("mergedTable").style.display = "none";
+      const alertBox = document.getElementById("alert");
+      const statusBox = document.getElementById("status");
+      const table = document.getElementById("mergedTable");
+      const tbody = table.querySelector("tbody");
+
+      alertBox.textContent = "";
+      statusBox.textContent = "";
+      table.style.display = "none";
+      tbody.innerHTML = "";
 
       if (!cls || !sub) return alert("Select class and subject");
 
-      const sbaList = JSON.parse(localStorage.getItem(`sba_${cls}_${sub}`)) || [];
-      const examList = JSON.parse(localStorage.getItem(`exam_${cls}_${sub}`)) || [];
+      const { data: sbaList, error: sbaError } = await supabase
+        .from("sba_scores")
+        .select("*")
+        .eq("class", cls)
+        .eq("subject", sub);
 
-      if (sbaList.length === 0 || examList.length === 0) {
-        document.getElementById("alert").textContent = "⚠️ SBA or Exam scores not found.";
+      const { data: examList, error: examError } = await supabase
+        .from("examscore")
+        .select("*")
+        .eq("class", cls)
+        .eq("subject", sub);
+
+      if (sbaError || examError) {
+        alertBox.textContent = "❌ Failed to load scores from Supabase.";
         return;
       }
 
-      const tbody = document.querySelector("#mergedTable tbody");
-      tbody.innerHTML = "";
+      if (!sbaList.length || !examList.length) {
+        alertBox.textContent = "⚠️ SBA or Exam scores not found.";
+        return;
+      }
 
       sbaList.forEach(s => {
         const exam = examList.find(e => e.student_id === s.student_id);
-        const examRaw = exam?.raw ?? null;
+        const examRaw = exam?.score ?? null;
         const examScaled = examRaw !== null ? Math.round((examRaw / 100) * 50) : null;
         const total = (s.scaled ?? 0) + (examScaled ?? 0);
 
         tbody.innerHTML += `
           <tr>
             <td>${s.student_id}</td>
-            <td>${s.full_name}</td>
+            <td>${s.student_name}</td>
             <td>${s.individual}</td>
             <td>${s.group}</td>
             <td>${s.test}</td>
@@ -114,20 +138,31 @@
         `;
       });
 
-      document.getElementById("mergedTable").style.display = "table";
+      table.style.display = "table";
+      statusBox.textContent = `✅ Loaded ${sbaList.length} records.`;
     }
 
-    function approve() {
+    async function approve() {
       const cls = document.getElementById("classSelect").value;
       const sub = document.getElementById("subjectSelect").value;
+      const statusBox = document.getElementById("status");
+
       if (!cls || !sub) return alert("Select class and subject first");
 
-      const approvals = JSON.parse(localStorage.getItem("approvalStatus")) || {};
-      const key = `approved_${cls}_${sub}`;
-      approvals[key] = "Approved";
-      localStorage.setItem("approvalStatus", JSON.stringify(approvals));
+      const { error } = await supabase.from("approvals").insert([{
+        class: cls,
+        subject: sub,
+        approved_by: activeUser.username,
+        approved_at: new Date().toISOString()
+      }]);
 
-      document.getElementById("status").textContent = `✅ Marks approved for ${sub} in ${cls}`;
+      if (error) {
+        statusBox.textContent = "❌ Failed to save approval: " + error.message;
+        statusBox.style.color = "crimson";
+      } else {
+        statusBox.textContent = `✅ Marks approved for ${sub} in ${cls}`;
+        statusBox.style.color = "green";
+      }
     }
   </script>
 </body>
