@@ -100,7 +100,7 @@
         .eq("subject", sub);
 
       const { data: examList, error: examError } = await supabase
-        .from("examscore")
+        .from("examscores")
         .select("*")
         .eq("class", cls)
         .eq("subject", sub);
