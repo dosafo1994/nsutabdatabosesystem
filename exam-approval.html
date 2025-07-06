@@ -1,0 +1,102 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <title>Exam Approvals | Headteacher</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+  <style>
+    body { font-family: Arial; background: #f4f9ff; padding: 30px; max-width: 1000px; margin: auto; }
+    h2 { color: #0077cc; margin-bottom: 20px; }
+    table { width: 100%; border-collapse: collapse; margin-top: 20px; }
+    th, td { border: 1px solid #ccc; padding: 10px; text-align: left; font-size: 14px; }
+    th { background-color: #e0ecf9; }
+    button { padding: 6px 12px; margin: 2px; background: #0077cc; color: white; border: none; border-radius: 4px; cursor: pointer; }
+    button:hover { background: #005fa3; }
+    .status { font-weight: bold; }
+  </style>
+</head>
+<body>
+  <h2>📄 Submitted Exam Questions</h2>
+  <table id="examTable">
+    <thead>
+      <tr>
+        <th>Teacher</th><th>Class</th><th>Subject</th><th>Type</th><th>Term</th><th>Status</th><th>Actions</th>
+      </tr>
+    </thead>
+    <tbody></tbody>
+  </table>
+
+  <script>
+    const supabase = window.supabase.createClient(
+      "https://iguspjforzyndedxafdi.supabase.co",
+      "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImlndXNwamZvcnp5bmRlZHhhZmRpIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTE2MDc5MzksImV4cCI6MjA2NzE4MzkzOX0.h_OF0GcsaXPJm7OuuA3fCz4FaXV3_VBXG_WLr0zafVE" // Replace with your anon key
+    );
+
+    async function loadSubmissions() {
+      const { data, error } = await supabase
+        .from("exam_drafts")
+        .select("*")
+        .eq("status", "Pending");
+
+      const tbody = document.querySelector("#examTable tbody");
+      tbody.innerHTML = "";
+
+      if (error || !data.length) {
+        tbody.innerHTML = `<tr><td colspan="7">No pending submissions found.</td></tr>`;
+        return;
+      }
+
+      data.forEach(row => {
+        tbody.innerHTML += `
+          <tr>
+            <td>${row.teacher_name}</td>
+            <td>${row.class}</td>
+            <td>${row.subject}</td>
+            <td>${row.type}</td>
+            <td>${row.term}</td>
+            <td class="status">${row.status}</td>
+            <td>
+              <button onclick="viewContent('${row.id}')">📖 View</button>
+              <button onclick="approve('${row.id}')">✅ Approve</button>
+            </td>
+          </tr>
+        `;
+      });
+    }
+
+    async function approve(id) {
+      const { error } = await supabase
+        .from("exam_drafts")
+        .update({ status: "Approved" })
+        .eq("id", id);
+
+      if (error) {
+        alert("❌ Failed to approve: " + error.message);
+      } else {
+        alert("✅ Approved successfully.");
+        loadSubmissions();
+      }
+    }
+
+    async function viewContent(id) {
+      const { data, error } = await supabase
+        .from("exam_drafts")
+        .select("content, file_url")
+        .eq("id", id)
+        .maybeSingle();
+
+      if (error || !data) {
+        alert("❌ Failed to load content.");
+        return;
+      }
+
+      const text = data.content || "No text content.";
+      const file = data.file_url ? `\n\n📎 File attached: ${data.file_url}` : "";
+      alert(`📝 Exam Content:\n\n${text}${file}`);
+    }
+
+    window.onload = loadSubmissions;
+  </script>
+</body>
+</html>
