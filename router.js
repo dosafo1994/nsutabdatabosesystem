@@ -1,10 +1,6 @@
-// router.js — Central navigation helper for Nsuta Portal
-
 function navigate(path) {
-  // Optional: Verify session before navigating
   const role = sessionStorage.getItem("role");
 
-  // If no role exists, block access to restricted pages
   const restrictedPages = [
     "dashboard.html",
     "score-entry.html",
@@ -19,10 +15,16 @@ function navigate(path) {
 
   if (restrictedPages.includes(path) && !role) {
     alert("Please login first.");
-    location.href = "index.html"; // homepage
+    location.href = "index.html";
     return;
   }
 
-  // Navigate to requested page
   window.location.href = path;
 }
+const headteacherOnly = ["term.html", "teachers.html"];
+
+if (headteacherOnly.includes(path) && role !== "headteacher") {
+  alert("Access denied. Headteachers only.");
+  return;
+}
+
